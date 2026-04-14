@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -26,6 +26,14 @@ const TODAY = new Date().toLocaleDateString("en-US", {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ReportPage() {
+  return (
+    <Suspense fallback={<LoadingState message="Loading..." />}>
+      <ReportPageInner />
+    </Suspense>
+  );
+}
+
+function ReportPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [report, setReport] = useState<Report | null>(null);
