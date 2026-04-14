@@ -1,0 +1,132 @@
+@import "tailwindcss";
+
+@theme {
+  --color-parchment: #F5F0E8;
+  --color-parchment-dark: #EDE8DF;
+  --color-bark: #2A2620;
+  --color-bark-light: #4A4540;
+  --color-forest: #3D5A3E;
+  --color-forest-light: #527554;
+  --color-sage: #7A9E7E;
+  --color-stone: #8A8278;
+  --color-stone-light: #B8B2A8;
+
+  --font-serif: var(--font-playfair);
+  --font-sans: var(--font-inter);
+
+  --animate-fade-up: fadeUp 0.75s ease-out forwards;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+body {
+  background-color: var(--color-parchment);
+  color: var(--color-bark);
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+/* Zero-height print break trigger — invisible on screen */
+.print-section-break {
+  display: none;
+}
+
+/* ─── Print stylesheet ───────────────────────────────────────────────────── */
+
+@media print {
+  @page {
+    size: auto;
+    margin: 0.75in;
+  }
+
+  /* Hide all screen-only UI */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Full-page white background */
+  html,
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Remove max-width constraint so content fills the page */
+  .print-main {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Report title */
+  .print-report-title {
+    font-family: var(--font-playfair), Georgia, serif !important;
+    font-size: 28pt !important;
+    color: black !important;
+    margin-bottom: 4pt !important;
+  }
+
+  /* Report date */
+  .print-report-date {
+    font-size: 10pt !important;
+    color: #555 !important;
+    margin-bottom: 32pt !important;
+  }
+
+  /* Section page break — zero padding/margin prevents blank-page artifact */
+  .print-section-break {
+    break-before: page !important;
+    page-break-before: always !important;
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+  }
+
+  /* Keep each section's content together — avoid splitting within a section */
+  .print-section-content {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Section number (muted, smaller) */
+  .print-section-number {
+    font-family: var(--font-playfair), Georgia, serif !important;
+    font-size: 22pt !important;
+    color: #bbb !important;
+    line-height: 1 !important;
+    margin-bottom: 4pt !important;
+  }
+
+  /* Section title */
+  .print-section-title {
+    font-family: var(--font-playfair), Georgia, serif !important;
+    font-size: 18pt !important;
+    color: black !important;
+    margin-bottom: 14pt !important;
+  }
+
+  /* Body paragraphs */
+  .print-para {
+    font-size: 11pt !important;
+    line-height: 1.7 !important;
+    color: black !important;
+    margin-bottom: 9pt !important;
+  }
+
+  .print-para strong {
+    color: black !important;
+  }
+
+  /* Hide screen dividers between sections */
+  .print-divider {
+    display: none !important;
+  }
+}

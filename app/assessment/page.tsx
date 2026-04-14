@@ -1,0 +1,539 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { SECTIONS, TOTAL_QUESTIONS } from "@/lib/questions";
+import { calculateScores } from "@/lib/scoring"; // used by handleNext
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type SonderContext = {
+  ageRange: string;
+  relationshipStatus: string;
+  hasChildren: string;
+  workField: string;
+  hobby: string;
+  clarityGoal: string;
+};
+
+// ─── Dev-only test data (real scores from user's own assessment) ──────────────
+const DEV_SCORES = {
+  bigFive: { Neuroticism: 53, Extraversion: 80, Openness: 83, Agreeableness: 83, Conscientiousness: 77 },
+  holland: { Realistic: 47, Investigative: 27, Artistic: 60, Social: 80, Enterprising: 80, Conventional: 33 },
+  attachment: { Avoidance: 43, Anxiety: 47 },
+  topStrengths: ["Creativity", "Curiosity", "Perspective", "Honesty", "Zest"],
+  allStrengths: {
+    Creativity: 5, Curiosity: 5, Perspective: 5, Bravery: 4, Perseverance: 2,
+    Honesty: 5, Zest: 5, Kindness: 5, "Social Intelligence": 5, Teamwork: 5,
+    Fairness: 4, Humility: 4,
+  },
+};
+
+const DEV_CONTEXT: SonderContext = {
+  ageRange: "35–44",
+  relationshipStatus: "Married",
+  hasChildren: "Yes",
+  workField: "Financial advisor for State Farm, just started.",
+  hobby: "I've been playing pool (8ball, 9ball) for 20 years and love it. Still competing and practicing every week. It's my passion.",
+  clarityGoal: "All of the above",
+};
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export default function AssessmentPage() {
+  const router = useRouter();
+  const [showIntake, setShowIntake] = useState(true);
+  const [context, setContext] = useState<SonderContext>({
+    ageRange: "",
+    relationshipStatus: "",
+    hasChildren: "",
+    workField: "",
+    hobby: "",
+    clarityGoal: "",
+  });
+  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [sectionIndex, setSectionIndex] = useState(0);
+
+  const section = SECTIONS[sectionIndex];
+  const isLastSection = sectionIndex === SECTIONS.length - 1;
+
+  const answeredInSection = section.questions.filter(
+    (q) => answers[q.id] !== undefined
+  ).length;
+  const allAnswered = answeredInSection === section.questions.length;
+  const remaining = section.questions.length - answeredInSection;
+
+  const totalAnswered = Object.keys(answers).length;
+  const progressPct = Math.round((totalAnswered / TOTAL_QUESTIONS) * 100);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [sectionIndex, showIntake]);
+
+  function handleAnswer(questionId: number, value: number) {
+    setAnswers((prev) => ({ ...prev, [questionId]: value }));
+  }
+
+  function handleIntakeContinue() {
+    localStorage.setItem("sonder_context", JSON.stringify(context));
+    setShowIntake(false);
+  }
+
+  function handleDevFill() {
+    localStorage.removeItem("sonder_report");
+    localStorage.setItem("sonder_scores", JSON.stringify(DEV_SCORES));
+    localStorage.setItem("sonder_context", JSON.stringify(DEV_CONTEXT));
+    router.push("/preview");
+  }
+
+  function handleNext() {
+    if (!allAnswered) return;
+    if (!isLastSection) {
+      setSectionIndex((i) => i + 1);
+    } else {
+      const scores = calculateScores(answers);
+      localStorage.setItem("sonder_scores", JSON.stringify(scores));
+      router.push("/preview");
+    }
+  }
+
+  if (showIntake) {
+    return (
+      <div className="min-h-screen bg-[#F9F7F4] flex flex-col">
+        <header className="px-6 sm:px-10 py-4 border-b border-stone-light/30">
+          <span className="font-serif text-xl font-bold text-forest">Sonder</span>
+        </header>
+
+        <main className="flex-1 max-w-2xl w-full mx-auto px-6 sm:px-8 py-10 pb-20">
+          <IntakeScreen
+            context={context}
+            onChange={setContext}
+            onContinue={handleIntakeContinue}
+          />
+        </main>
+
+        {process.env.NODE_ENV === "development" && (
+          <button
+            onClick={handleDevFill}
+            className="fixed bottom-4 left-4 z-50 bg-bark text-parchment text-xs font-medium px-3 py-2 rounded opacity-70 hover:opacity-100 transition-opacity"
+          >
+            Quick Test Fill
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#F9F7F4] flex flex-col">
+      {/* ── Sticky header + progress bar ── */}
+      <header className="sticky top-0 z-50 shrink-0 bg-[#F9F7F4] border-b border-stone-light/30">
+        <div className="px-6 sm:px-10 py-4 flex items-center justify-between">
+          <span className="font-serif text-xl font-bold text-forest">Sonder</span>
+          <span className="text-sm text-stone">
+            Section {sectionIndex + 1} of {SECTIONS.length}
+          </span>
+        </div>
+        <div className="h-1 w-full bg-parchment-dark">
+          <div
+            className="h-full bg-forest transition-all duration-500 ease-out"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
+      </header>
+
+      {/* ── Main content ── */}
+      <main className="flex-1 max-w-2xl w-full mx-auto px-6 sm:px-8 py-8 pb-20">
+        {/* Section header */}
+        <div className="mb-8">
+          <p className="text-xs font-medium text-forest tracking-widest uppercase mb-1">
+            {section.framework}
+          </p>
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-bark mb-2">
+            {section.title}
+          </h1>
+          <p className="text-stone text-sm mb-4">{section.subtitle}</p>
+
+          {/* Section progress dots */}
+          <div className="flex items-center gap-2 mb-4">
+            {SECTIONS.map((_, i) => (
+              <div
+                key={i}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  i < sectionIndex
+                    ? "w-6 bg-forest"
+                    : i === sectionIndex
+                    ? "w-8 bg-forest"
+                    : "w-4 bg-stone-light"
+                }`}
+              />
+            ))}
+          </div>
+
+          {/* Scale legend */}
+          <div className="inline-flex items-center gap-1.5 text-xs text-stone bg-parchment-dark px-3 py-1.5 rounded">
+            <span className="font-semibold text-bark">1</span>
+            <span>= {section.scaleLow}</span>
+            <span className="text-stone-light mx-1">·</span>
+            <span className="font-semibold text-bark">5</span>
+            <span>= {section.scaleHigh}</span>
+          </div>
+        </div>
+
+        {/* Questions */}
+        <div className="divide-y divide-stone-light/20">
+          {(() => {
+            const firstUnanswered = section.questions.findIndex(
+              (q) => answers[q.id] === undefined
+            );
+            return section.questions.map((question, idx) => (
+              <QuestionItem
+                key={question.id}
+                questionId={question.id}
+                text={question.text}
+                answer={answers[question.id]}
+                scaleLow={section.scaleLow}
+                scaleHigh={section.scaleHigh}
+                onChange={(val) => handleAnswer(question.id, val)}
+                dimmed={firstUnanswered !== -1 && idx > firstUnanswered}
+              />
+            ));
+          })()}
+        </div>
+
+        {/* ── Bottom nav ── */}
+        <div className="mt-10 flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-stone">
+            {allAnswered ? (
+              <span className="text-forest-light font-medium">
+                ✓ All questions answered
+              </span>
+            ) : (
+              <>
+                {remaining} question{remaining !== 1 ? "s" : ""} remaining in
+                this section
+              </>
+            )}
+          </p>
+
+          <button
+            onClick={handleNext}
+            disabled={!allAnswered}
+            className={`w-full sm:w-auto px-8 py-4 rounded-full font-medium text-base tracking-wide transition-all duration-200 ${
+              allAnswered
+                ? "bg-forest text-parchment hover:bg-forest-light cursor-pointer"
+                : "bg-stone-light/40 text-stone cursor-not-allowed"
+            }`}
+          >
+            {isLastSection ? "See My Results" : "Next Section →"}
+          </button>
+        </div>
+      </main>
+
+      {/* Dev-only quick fill — never shown in production */}
+      {process.env.NODE_ENV === "development" && (
+        <button
+          onClick={handleDevFill}
+          className="fixed bottom-4 left-4 z-50 bg-bark text-parchment text-xs font-medium px-3 py-2 rounded opacity-70 hover:opacity-100 transition-opacity"
+        >
+          Quick Test Fill
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─── Intake Screen ────────────────────────────────────────────────────────────
+
+function IntakeScreen({
+  context,
+  onChange,
+  onContinue,
+}: {
+  context: SonderContext;
+  onChange: (c: SonderContext) => void;
+  onContinue: () => void;
+}) {
+  const canContinue = context.clarityGoal !== "";
+
+  return (
+    <div>
+      <div className="mb-10">
+        <p className="text-xs font-medium text-forest tracking-widest uppercase mb-1">
+          Getting Started
+        </p>
+        <h1 className="font-serif text-3xl sm:text-4xl font-bold text-bark mb-2" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
+          Before we begin
+        </h1>
+        <p className="text-stone text-sm">
+          A few quick details help us personalize your report.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-8">
+        {/* Age range */}
+        <IntakeRadioGroup
+          label="How old are you?"
+          options={["Under 25", "25–34", "35–44", "45–54", "55+"]}
+          value={context.ageRange}
+          onChange={(v) => onChange({ ...context, ageRange: v })}
+          optional
+        />
+
+        {/* Relationship status */}
+        <IntakeRadioGroup
+          label="What's your relationship status?"
+          options={["Single", "In a relationship", "Married", "Divorced or separated"]}
+          value={context.relationshipStatus}
+          onChange={(v) => onChange({ ...context, relationshipStatus: v })}
+          optional
+        />
+
+        {/* Children */}
+        <IntakeRadioGroup
+          label="Do you have children?"
+          options={["No", "Yes"]}
+          value={context.hasChildren}
+          onChange={(v) => onChange({ ...context, hasChildren: v })}
+          optional
+        />
+
+        {/* Work field */}
+        <div>
+          <p className="text-sm font-medium text-bark mb-3">
+            What field do you work in?{" "}
+            <span className="font-normal text-stone">(optional)</span>
+          </p>
+          <input
+            type="text"
+            maxLength={100}
+            value={context.workField}
+            onChange={(e) => onChange({ ...context, workField: e.target.value })}
+            placeholder="e.g. finance, education, healthcare..."
+            className="w-full bg-transparent border-0 border-b border-stone-light/60 px-0 py-2.5 text-sm text-bark placeholder:text-stone-light focus:outline-none focus:border-forest/60 transition-colors"
+          />
+        </div>
+
+        {/* Hobby / long-term pursuit */}
+        <div>
+          <p className="text-sm font-medium text-bark mb-3">
+            Is there a skill or pursuit you&rsquo;ve spent years refining?{" "}
+            <span className="font-normal text-stone">(optional)</span>
+          </p>
+          <textarea
+            maxLength={150}
+            rows={3}
+            value={context.hobby}
+            onChange={(e) => onChange({ ...context, hobby: e.target.value })}
+            placeholder="e.g. chess, woodworking, distance running..."
+            className="w-full block mb-0 bg-transparent border-0 border-b border-stone-light/60 px-0 py-2.5 text-sm text-bark placeholder:text-stone-light focus:outline-none focus:border-forest/60 transition-colors resize-none"
+          />
+        </div>
+
+        {/* Clarity goal — required */}
+        <IntakeRadioGroup
+          label="What do you most want clarity on?"
+          options={[
+            "My career direction",
+            "My relationships",
+            "Who I am as a person",
+            "All of the above",
+          ]}
+          value={context.clarityGoal}
+          onChange={(v) => onChange({ ...context, clarityGoal: v })}
+          required
+        />
+      </div>
+
+      <div className="mt-10 flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
+        <p className="text-xs text-stone max-w-xs leading-relaxed text-center sm:text-left">
+          All fields optional except the last one. Your answers are never stored on our servers.
+        </p>
+        <button
+          onClick={onContinue}
+          disabled={!canContinue}
+          className={`w-full sm:w-auto px-7 py-3 rounded-full font-medium text-base tracking-wide transition-all duration-200 ${
+            canContinue
+              ? "bg-forest text-parchment hover:bg-forest-light cursor-pointer"
+              : "bg-stone-light/40 text-stone cursor-not-allowed"
+          }`}
+        >
+          Continue to Assessment →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Intake Radio Group ───────────────────────────────────────────────────────
+
+function IntakeRadioGroup({
+  label,
+  options,
+  value,
+  onChange,
+  optional,
+  required,
+}: {
+  label: string;
+  options: string[];
+  value: string;
+  onChange: (v: string) => void;
+  optional?: boolean;
+  required?: boolean;
+}) {
+  return (
+    <div>
+      <p className="text-sm font-medium text-bark mb-3">
+        {label}{" "}
+        {optional && <span className="font-normal text-stone">(optional)</span>}
+        {required && <span className="font-normal text-forest"> *</span>}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {options.map((opt) => {
+          const selected = value === opt;
+          return (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => onChange(opt)}
+              className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-150 select-none ${
+                selected
+                  ? "bg-forest text-parchment shadow-sm"
+                  : "bg-transparent border border-stone-light/60 text-bark-light hover:border-forest/50 hover:text-forest"
+              }`}
+            >
+              {opt}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Scale color config (per position 1–5) ───────────────────────────────────
+
+const SCALE_COLOR = { border: "#2D4A2E", fill: "#2D4A2E", hoverBg: "rgba(45,74,46,0.10)" };
+
+// ─── Likert Circle Button ─────────────────────────────────────────────────────
+
+function LikertCircle({
+  value,
+  isSelected,
+  ariaLabel,
+  onClick,
+}: {
+  value: number;
+  isSelected: boolean;
+  ariaLabel: string;
+  onClick: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      aria-pressed={isSelected}
+      aria-label={ariaLabel}
+      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 select-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+      style={{
+        border: `1.5px solid ${SCALE_COLOR.border}`,
+        backgroundColor: isSelected
+          ? SCALE_COLOR.fill
+          : hovered
+          ? SCALE_COLOR.hoverBg
+          : "transparent",
+        transform: hovered && !isSelected ? "scale(1.1)" : "scale(1)",
+        transition: "background-color 150ms ease, transform 150ms ease",
+        cursor: "pointer",
+        outlineColor: SCALE_COLOR.border,
+      }}
+    >
+      <span
+        style={{
+          fontSize: "13px",
+          fontWeight: 600,
+          lineHeight: 1,
+          color: isSelected ? "white" : SCALE_COLOR.border,
+          userSelect: "none",
+        }}
+      >
+        {value}
+      </span>
+    </button>
+  );
+}
+
+// ─── Question Item ────────────────────────────────────────────────────────────
+
+type QuestionItemProps = {
+  questionId: number;
+  text: string;
+  answer: number | undefined;
+  scaleLow: string;
+  scaleHigh: string;
+  onChange: (value: number) => void;
+  dimmed?: boolean;
+};
+
+function QuestionItem({
+  questionId: _questionId,
+  text,
+  answer,
+  scaleLow,
+  scaleHigh,
+  onChange,
+  dimmed,
+}: QuestionItemProps) {
+  const isAnswered = answer !== undefined;
+
+  return (
+    <div
+      className="py-6 transition-opacity duration-300"
+      style={{ opacity: dimmed ? 0.38 : 1 }}
+    >
+      <p
+        className={`text-bark leading-snug mb-5 text-base sm:text-[1.0625rem] transition-all duration-200 ${
+          isAnswered ? "font-medium" : "font-normal"
+        }`}
+      >
+        {text}
+      </p>
+
+      <div
+        className="flex items-center justify-between gap-2 sm:gap-3"
+        role="group"
+        aria-label={`Answer: ${text}`}
+      >
+        {/* Disagree label */}
+        <span className="text-[10px] sm:text-xs text-stone whitespace-nowrap leading-tight">
+          Disagree
+        </span>
+
+        {/* Circle buttons */}
+        <div className="flex items-center gap-1.5 sm:gap-3">
+          {([1, 2, 3, 4, 5] as const).map((val) => (
+            <LikertCircle
+              key={val}
+              value={val}
+              isSelected={answer === val}
+              ariaLabel={`${val} — ${
+                val === 1 ? scaleLow : val === 5 ? scaleHigh : String(val)
+              }`}
+              onClick={() => onChange(val)}
+            />
+          ))}
+        </div>
+
+        {/* Agree label */}
+        <span className="text-[10px] sm:text-xs text-stone whitespace-nowrap leading-tight">
+          Agree
+        </span>
+      </div>
+    </div>
+  );
+}
