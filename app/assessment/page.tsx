@@ -8,12 +8,19 @@ import { calculateScores } from "@/lib/scoring"; // used by handleNext
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type SonderContext = {
+  // Screen 1
   ageRange: string;
   relationshipStatus: string;
   hasChildren: string;
   workField: string;
   hobby: string;
   clarityGoal: string;
+  // Screen 2
+  hardestThing: string;
+  socialPerception: string;
+  tooMuch: string;
+  lifeStage: string;
+  worstSelf: string;
 };
 
 // ─── Dev-only test data (real scores from user's own assessment) ──────────────
@@ -36,13 +43,18 @@ const DEV_CONTEXT: SonderContext = {
   workField: "Financial advisor for State Farm, just started.",
   hobby: "I've been playing pool (8ball, 9ball) for 20 years and love it. Still competing and practicing every week. It's my passion.",
   clarityGoal: "All of the above",
+  hardestThing: "Starting a new career at State Farm while trying to be present for my family",
+  socialPerception: "They say I'm always on, always helping, never seem to need anything",
+  tooMuch: "My need to see potential in everyone and everything",
+  lifeStage: "Navigating",
+  worstSelf: "Intellectualize and analyze everything",
 };
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AssessmentPage() {
   const router = useRouter();
-  const [showIntake, setShowIntake] = useState(true);
+  const [intakeStep, setIntakeStep] = useState<"screen1" | "transition" | "screen2" | "questions">("screen1");
   const [context, setContext] = useState<SonderContext>({
     ageRange: "",
     relationshipStatus: "",
@@ -50,6 +62,11 @@ export default function AssessmentPage() {
     workField: "",
     hobby: "",
     clarityGoal: "",
+    hardestThing: "",
+    socialPerception: "",
+    tooMuch: "",
+    lifeStage: "",
+    worstSelf: "",
   });
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [sectionIndex, setSectionIndex] = useState(0);
@@ -68,15 +85,20 @@ export default function AssessmentPage() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [sectionIndex, showIntake]);
+  }, [sectionIndex, intakeStep]);
 
   function handleAnswer(questionId: number, value: number) {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   }
 
-  function handleIntakeContinue() {
+  function handleScreen1Continue() {
+    setIntakeStep("transition");
+    setTimeout(() => setIntakeStep("screen2"), 1800);
+  }
+
+  function handleScreen2Continue() {
     localStorage.setItem("sonder_context", JSON.stringify(context));
-    setShowIntake(false);
+    setIntakeStep("questions");
   }
 
   function handleDevFill() {
@@ -97,26 +119,48 @@ export default function AssessmentPage() {
     }
   }
 
-  if (showIntake) {
+  if (intakeStep === "screen1") {
     return (
       <div className="min-h-screen bg-[#F9F7F4] flex flex-col">
         <header className="px-6 sm:px-10 py-4 border-b border-stone-light/30">
           <span className="font-serif text-xl font-bold text-forest">Sonder</span>
         </header>
-
         <main className="flex-1 max-w-2xl w-full mx-auto px-6 sm:px-8 py-10 pb-20">
-          <IntakeScreen
-            context={context}
-            onChange={setContext}
-            onContinue={handleIntakeContinue}
-          />
+          <IntakeScreen context={context} onChange={setContext} onContinue={handleScreen1Continue} />
         </main>
-
         {process.env.NODE_ENV === "development" && (
-          <button
-            onClick={handleDevFill}
-            className="fixed bottom-4 left-4 z-50 bg-bark text-parchment text-xs font-medium px-3 py-2 rounded opacity-70 hover:opacity-100 transition-opacity"
-          >
+          <button onClick={handleDevFill} className="fixed bottom-4 left-4 z-50 bg-bark text-parchment text-xs font-medium px-3 py-2 rounded opacity-70 hover:opacity-100 transition-opacity">
+            Quick Test Fill
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  if (intakeStep === "transition") {
+    return (
+      <div className="min-h-screen bg-[#F9F7F4] flex flex-col items-center justify-center px-6">
+        <p
+          className="text-bark text-center text-lg sm:text-xl max-w-sm leading-relaxed animate-fade-up"
+          style={{ fontFamily: "var(--font-playfair), Georgia, serif", fontStyle: "italic" }}
+        >
+          To make your report truly accurate, we need to go one level deeper.
+        </p>
+      </div>
+    );
+  }
+
+  if (intakeStep === "screen2") {
+    return (
+      <div className="min-h-screen bg-[#F9F7F4] flex flex-col">
+        <header className="px-6 sm:px-10 py-4 border-b border-stone-light/30">
+          <span className="font-serif text-xl font-bold text-forest">Sonder</span>
+        </header>
+        <main className="flex-1 max-w-2xl w-full mx-auto px-6 sm:px-8 py-10 pb-20">
+          <IntakeScreen2 context={context} onChange={setContext} onContinue={handleScreen2Continue} />
+        </main>
+        {process.env.NODE_ENV === "development" && (
+          <button onClick={handleDevFill} className="fixed bottom-4 left-4 z-50 bg-bark text-parchment text-xs font-medium px-3 py-2 rounded opacity-70 hover:opacity-100 transition-opacity">
             Quick Test Fill
           </button>
         )}
@@ -326,7 +370,7 @@ function IntakeScreen({
             value={context.hobby}
             onChange={(e) => onChange({ ...context, hobby: e.target.value })}
             placeholder="e.g. chess, woodworking, distance running..."
-            className="w-full block mb-0 bg-transparent border-0 border-b border-stone-light/60 px-0 py-2.5 text-sm text-bark placeholder:text-stone-light focus:outline-none focus:border-forest/60 transition-colors resize-none"
+            className="w-full block mb-0 bg-transparent border-0 border-b border-stone-light/60 px-0 pt-2.5 pb-0 text-sm text-bark placeholder:text-stone-light focus:outline-none focus:border-forest/60 transition-colors resize-none"
           />
         </div>
 
@@ -341,6 +385,132 @@ function IntakeScreen({
           ]}
           value={context.clarityGoal}
           onChange={(v) => onChange({ ...context, clarityGoal: v })}
+          required
+        />
+      </div>
+
+      <div className="mt-10 flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
+        <p className="text-xs text-stone max-w-xs leading-relaxed text-center sm:text-left">
+          All fields optional except the last one. Your answers are never stored on our servers.
+        </p>
+        <button
+          onClick={onContinue}
+          disabled={!canContinue}
+          className={`w-full sm:w-auto px-7 py-3 rounded-full font-medium text-base tracking-wide transition-all duration-200 ${
+            canContinue
+              ? "bg-forest text-parchment hover:bg-forest-light cursor-pointer"
+              : "bg-stone-light/40 text-stone cursor-not-allowed"
+          }`}
+        >
+          Continue to Assessment →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Intake Screen 2 ─────────────────────────────────────────────────────────
+
+function IntakeScreen2({
+  context,
+  onChange,
+  onContinue,
+}: {
+  context: SonderContext;
+  onChange: (c: SonderContext) => void;
+  onContinue: () => void;
+}) {
+  const canContinue = context.worstSelf !== "";
+
+  return (
+    <div>
+      <div className="mb-10">
+        <p className="text-xs font-medium text-forest tracking-widest uppercase mb-1">
+          A Few Deeper Questions
+        </p>
+        <h1 className="font-serif text-3xl sm:text-4xl font-bold text-bark mb-2" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
+          One level deeper
+        </h1>
+        <p className="text-stone text-sm">
+          These take 2 minutes and make your report significantly more accurate.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-8">
+        {/* Hardest thing */}
+        <div>
+          <p className="text-sm font-medium text-bark mb-3">
+            What&rsquo;s the hardest thing you&rsquo;re navigating right now?{" "}
+            <span className="font-normal text-stone">(optional)</span>
+          </p>
+          <input
+            type="text"
+            maxLength={150}
+            value={context.hardestThing}
+            onChange={(e) => onChange({ ...context, hardestThing: e.target.value })}
+            placeholder="A career transition, a relationship, a loss, a decision..."
+            className="w-full bg-transparent border-0 border-b border-stone-light/60 px-0 py-2.5 text-sm text-bark placeholder:text-stone-light focus:outline-none focus:border-forest/60 transition-colors"
+          />
+        </div>
+
+        {/* Social perception */}
+        <div>
+          <p className="text-sm font-medium text-bark mb-3">
+            How do the people closest to you describe you?{" "}
+            <span className="font-normal text-stone">(optional)</span>
+          </p>
+          <input
+            type="text"
+            maxLength={150}
+            value={context.socialPerception}
+            onChange={(e) => onChange({ ...context, socialPerception: e.target.value })}
+            placeholder="They say I'm..."
+            className="w-full bg-transparent border-0 border-b border-stone-light/60 px-0 py-2.5 text-sm text-bark placeholder:text-stone-light focus:outline-none focus:border-forest/60 transition-colors"
+          />
+        </div>
+
+        {/* Too much */}
+        <div>
+          <p className="text-sm font-medium text-bark mb-3">
+            What&rsquo;s a quality you have that people sometimes tell you is &ldquo;too much&rdquo;?{" "}
+            <span className="font-normal text-stone">(optional)</span>
+          </p>
+          <input
+            type="text"
+            maxLength={150}
+            value={context.tooMuch}
+            onChange={(e) => onChange({ ...context, tooMuch: e.target.value })}
+            placeholder="My intensity, my need to help, my attention to detail..."
+            className="w-full bg-transparent border-0 border-b border-stone-light/60 px-0 py-2.5 text-sm text-bark placeholder:text-stone-light focus:outline-none focus:border-forest/60 transition-colors"
+          />
+        </div>
+
+        {/* Life stage */}
+        <IntakeRadioGroup
+          label="Where are you right now in life?"
+          options={[
+            "Building (new role, new relationship, new chapter)",
+            "Navigating (transition, uncertainty, change)",
+            "Rebuilding (after loss, divorce, or major shift)",
+            "Deepening (established, seeking more meaning)",
+          ]}
+          value={context.lifeStage}
+          onChange={(v) => onChange({ ...context, lifeStage: v })}
+          optional
+        />
+
+        {/* Worst self — required */}
+        <IntakeRadioGroup
+          label="When you're at your worst, you tend to:"
+          options={[
+            "Withdraw and go quiet",
+            "Push harder and control more",
+            "Seek reassurance from others",
+            "Distract yourself and stay busy",
+            "Intellectualize and analyze everything",
+          ]}
+          value={context.worstSelf}
+          onChange={(v) => onChange({ ...context, worstSelf: v })}
           required
         />
       </div>

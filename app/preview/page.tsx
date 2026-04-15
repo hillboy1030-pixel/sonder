@@ -302,8 +302,11 @@ function ReportPreview({ report }: { report: Report }) {
             One-time payment. Your report is yours to download. We never store
             your data.
           </p>
-          <a href="/report?tester=true" className="text-xs text-stone-light hover:text-stone transition-colors">
-            Skip payment (testers only)
+          <a
+            href="/report?tester=true"
+            className="w-full sm:w-auto inline-block font-medium text-base px-10 py-4 rounded-full tracking-wide transition-colors duration-200 text-center bg-forest text-parchment hover:bg-forest-light"
+          >
+            View Full Report (Testers Only)
           </a>
         </div>
       </main>

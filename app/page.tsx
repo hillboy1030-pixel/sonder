@@ -49,7 +49,7 @@ export default function HomePage() {
         {/* Parallax forest image */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="https://images.unsplash.com/photo-1448375240586-882707db888b?w=1920&q=80"
+          src="https://images.unsplash.com/photo-1511497584788-876760111969?w=1920&q=80"
           alt=""
           aria-hidden="true"
           style={{
@@ -155,7 +155,7 @@ export default function HomePage() {
               animationFillMode: "both",
             }}
           >
-            How well do you actually know yourself?
+            The first journey is inward.
           </h1>
 
           {/* Subheadline */}
@@ -173,7 +173,7 @@ export default function HomePage() {
               animationFillMode: "both",
             }}
           >
-            Every decision you&rsquo;ve made — every relationship, every career move, every argument you couldn&rsquo;t let go — came from patterns you&rsquo;ve never seen clearly. Sonder makes them visible.
+            Every pattern running your life right now — in your relationships, your work, the arguments you keep having — was set in motion before you understood what was happening. Sonder maps the terrain.
           </p>
 
           {/* CTA button */}
@@ -339,6 +339,17 @@ export default function HomePage() {
         >
           Your privacy is protected — we never store your responses or results on our servers.
         </p>
+        <p
+          style={{
+            fontSize: "13px",
+            fontFamily: "var(--font-playfair), Georgia, serif",
+            fontStyle: "italic",
+            color: "#B8B2A8",
+            marginTop: "20px",
+          }}
+        >
+          Understand yourself better. Sonder more deeply.
+        </p>
       </footer>
     </div>
   );
@@ -373,7 +384,7 @@ function HeroButton() {
           : "0 2px 12px rgba(0,0,0,0.12)",
       }}
     >
-      Begin Your Assessment
+      Step Across the Threshold
     </Link>
   );
 }

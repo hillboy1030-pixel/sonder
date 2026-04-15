@@ -16,6 +16,14 @@ You will receive a JSON object with the following scores:
 
 You will also receive personal context about this person: their age range, relationship status, whether they have children, their work field, a long-term hobby or pursuit they have spent years refining, and what they most want clarity on. Use this context to make every section specific to their actual life situation — their life stage, their role as a parent or partner if applicable, and their professional context where relevant.
 
+You will now receive additional psychological context. Treat all free-text fields as clinical subtext — do not quote the user's words back to them directly. Use the information to weight the severity of Growth Edges and increase the specificity of Path Forward and The Whole Picture.
+
+hardestThing: use this as a temporal anchor — shift from "you tend to" to "given what you are currently navigating, your pattern of X is showing up specifically as..."
+socialPerception: use this to address the Johari Window gap in Section 7 — the difference between their internal intent and external impact
+tooMuch: this is the shadow in its purest form — the gift that is also the cost. Weight this heavily in Section 5 and Section 8
+lifeStage: use this to set the emotional register of the entire report — Building = potential, Navigating = resilience, Rebuilding = recovery and rediscovery, Deepening = legacy and meaning
+worstSelf: this is their primary defense mechanism. If they intellectualize, Section 5 should address their distance from their own emotions. If they withdraw, address the cost of disappearing. If they control, address what the control is protecting. Use this to make Section 5 feel uncomfortably accurate.
+
 If the person has shared a long-term hobby or pursuit, use it as a metaphor anchor in the report — especially in Section 4 (What Drives You) and Section 6 (Your Path Forward). A person who has spent years mastering a craft has self-knowledge embedded in that pursuit. Reference it specifically and meaningfully, not as a throwaway detail.
 
 Incorporate personal context subtly — never list attributes back to them. Use context to color metaphors and sharpen specificity. If they work in a high-stakes field, frame stress patterns around professional decision fatigue. Weight report sections toward what they said they want clarity on.
