@@ -404,7 +404,7 @@ function IntakeScreen({
               : "bg-stone-light/40 text-stone cursor-not-allowed"
           }`}
         >
-          Continue to Assessment →
+          Next →
         </button>
       </div>
     </div>
