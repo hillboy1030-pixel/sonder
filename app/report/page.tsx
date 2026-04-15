@@ -288,9 +288,14 @@ function FullReport({ report }: { report: Report }) {
           <p className="print-report-date text-stone text-sm mb-6">{TODAY}</p>
 
           {/* Privacy notice — hidden in print */}
-          <p className="no-print text-xs text-stone italic max-w-md mx-auto leading-relaxed mb-8">
+          <p className="no-print text-xs text-stone italic max-w-md mx-auto leading-relaxed mb-3">
             Save or print this report now — for your privacy, we do not store your data
             and this page will not be accessible after you close your browser.
+          </p>
+
+          {/* Disclaimer — hidden in print */}
+          <p className="no-print text-xs text-stone-light italic max-w-md mx-auto leading-relaxed mb-8">
+            Sonder is a self-reflection tool based on validated psychological research frameworks. It is not a clinical assessment, therapy, or substitute for professional mental health care. If you are experiencing a mental health crisis, please contact the 988 Suicide and Crisis Lifeline by calling or texting 988.
           </p>
 
           <DownloadButton printing={printing} onPrint={handlePrint} />
@@ -308,8 +313,16 @@ function FullReport({ report }: { report: Report }) {
           ))}
         </div>
 
+        {/* Closing line */}
+        <p
+          className="mt-16 text-center text-sm text-stone-light italic"
+          style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
+        >
+          You are sondering.
+        </p>
+
         {/* Bottom download button — hidden in print */}
-        <div className="mt-16 flex justify-center">
+        <div className="mt-10 flex justify-center">
           <DownloadButton printing={printing} onPrint={handlePrint} />
         </div>
       </main>

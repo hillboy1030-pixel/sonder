@@ -14,9 +14,9 @@ type Report = { sections: ReportSection[]; previewInsights: PreviewInsight[] };
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const LOADING_MESSAGES = [
-  "Reading between your answers...",
-  "Finding the patterns you haven't named yet...",
+  "Sondering your answers...",
   "Mapping the geometry of your inner life...",
+  "Finding the patterns you haven't named yet...",
   "Almost there...",
 ];
 
@@ -29,6 +29,7 @@ const LOCKED_SECTION_TITLES = [
   "Your Path Forward",
   "The Sonder Lens",
   "The Whole Picture",
+  "Your Next 90 Days",
 ];
 
 const BLUR_PLACEHOLDER =
@@ -238,10 +239,10 @@ function ReportPreview({ report }: { report: Report }) {
         {/* Title */}
         <div className="mb-10">
           <p className="text-xs font-medium text-forest tracking-widest uppercase mb-1">
-            Your Portrait
+            Your First Sonder
           </p>
           <h1 className="font-serif text-2xl sm:text-3xl font-bold text-bark">
-            Three truths about you.
+            Three truths from your sonder.
           </h1>
           <p className="text-stone text-sm mt-2">
             These emerged from your answers. The full picture is below.
@@ -267,7 +268,7 @@ function ReportPreview({ report }: { report: Report }) {
             }`}
             style={shareLoading ? undefined : { borderWidth: "1.5px", borderStyle: "solid", borderColor: "#2D4A2E", color: "#2D4A2E" }}
           >
-            {shareLoading ? "Generating image…" : "Share Your Insights"}
+            {shareLoading ? "Generating image…" : "Share Your Sonder"}
           </button>
           <p className="text-xs text-stone">Share your free insights — no payment needed</p>
         </div>
@@ -275,7 +276,7 @@ function ReportPreview({ report }: { report: Report }) {
         {/* Locked sections */}
         <div className="mb-10">
           <p className="text-xs font-medium text-stone uppercase tracking-widest mb-4">
-            Full Report — 8 Sections
+            Full Report — 9 Sections
           </p>
           <div className="flex flex-col gap-3">
             {LOCKED_SECTION_TITLES.map((title) => (
@@ -295,7 +296,7 @@ function ReportPreview({ report }: { report: Report }) {
                 : "bg-forest text-parchment hover:bg-forest-light cursor-pointer"
             }`}
           >
-            {checkoutLoading ? "Redirecting to checkout…" : "Unlock Your Full Report — $5"}
+            {checkoutLoading ? "Redirecting to checkout…" : "Sonder Deeper — $5"}
           </button>
           {checkoutError && (
             <p className="text-xs text-bark">{checkoutError}</p>

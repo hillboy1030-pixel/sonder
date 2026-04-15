@@ -300,7 +300,8 @@ function IntakeScreen({
   onChange: (c: SonderContext) => void;
   onContinue: () => void;
 }) {
-  const canContinue = context.clarityGoal !== "";
+  const [agreed, setAgreed] = useState(false);
+  const canContinue = context.clarityGoal !== "" && agreed;
 
   return (
     <div>
@@ -391,7 +392,35 @@ function IntakeScreen({
         />
       </div>
 
-      <div className="mt-10 flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
+      {/* Disclaimer checkbox */}
+      <label className="mt-8 flex items-start gap-3 cursor-pointer">
+        <div className="relative flex-shrink-0 mt-0.5">
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            className="sr-only"
+          />
+          <div
+            className="w-4 h-4 rounded border transition-colors duration-150 flex items-center justify-center"
+            style={{
+              borderColor: agreed ? "#3D5A3E" : "#B8B2A8",
+              backgroundColor: agreed ? "#3D5A3E" : "transparent",
+            }}
+          >
+            {agreed && (
+              <svg width="9" height="7" viewBox="0 0 9 7" fill="none" aria-hidden="true">
+                <path d="M1 3.5L3.5 6L8 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </div>
+        </div>
+        <span className="text-xs text-stone leading-relaxed">
+          I understand that Sonder is a self-reflection tool and not a substitute for professional mental health care. I am 18 or older.
+        </span>
+      </label>
+
+      <div className="mt-6 flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
         <p className="text-xs text-stone max-w-xs leading-relaxed text-center sm:text-left">
           All fields optional except the last one. Your answers are never stored on our servers.
         </p>

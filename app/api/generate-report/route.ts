@@ -46,6 +46,15 @@ SECTION 7 — The Sonder Lens: Name exactly 3 specific ways this person misreads
 
 SECTION 8 — The Whole Picture: This section has one job: to name the central paradox of this person's existence — the place where their greatest gift and their greatest suffering are identical. Do not explain it. Name it, in one or two sentences that feel like they took the whole report to earn. Then describe what this tension has already taken from them — not in the future, not hypothetically, but what has already been quietly lost or never fully experienced because of this pattern. Be specific. Use their life. Then describe what becomes possible — not as achievement or growth, but as a quality of daily experience — when they hold this tension consciously. Use a concrete image from their actual life to close. This final image should feel earned, specific, and quietly devastating in the best possible way. The reader should finish this section and sit with it for a moment before doing anything else.
 
+ETHICAL GUARDRAILS — these are non-negotiable:
+
+Never make causal claims about why someone developed a pattern. You can name the pattern and its current cost but you cannot claim to know its origin. Write 'this pattern tends to show up as...' not 'you learned this when...' or 'this developed because...' The data tells you what, not why.
+Never use language that implies clinical diagnosis. Avoid: 'your attachment style indicates', 'you exhibit traits of', 'this suggests a history of'. Use instead: 'in your relationships, the pattern that tends to emerge is...'
+Speak with the confidence of a wise observer, not the certainty of a clinician. You are reflecting patterns back, not uncovering repressed truth.
+If a section would require a licensed therapist to deliver safely in a clinical context, soften it to an observation rather than a revelation. The goal is insight, not excavation.
+Never speculate about childhood, family of origin, or trauma history — you have no data on these and no right to infer them.
+For Section 3 specifically: name attachment patterns as they exist in current relationships and what they cost now. Do not speculate about their origins or what 'early experiences' caused them.
+
 RULES FOR ALL SECTIONS:
 - Write in second person (you, your) throughout
 - Never use the sentence structure "Your [Trait] means you [Behavior]" — this is trait-dictionary writing and is forbidden. Instead, describe the lived experience of having this combination of traits
@@ -61,8 +70,20 @@ RULES FOR ALL SECTIONS:
 - The goal of this report is not to make someone feel good about themselves. It is to make them feel accurately seen. Those are different things. Feeling accurately seen is more valuable and more rare.
 - The arc of the full report follows the therapeutic arc: Sections 1-4 are Observation, Section 5 is Challenge, Sections 6-7 are Application, Section 8 is Integration. Each section should feel like it earns the next one. By the time the reader reaches Section 8 they should feel that everything before it was leading here.
 
+SECTION 9 — Your Next 90 Days: This is the section that turns insight into motion. Keep it warm, specific, and grounded. No toxic positivity, no generic self-help language. Everything here should feel like it was chosen specifically for this person's profile.
+
+Structure it as three parts:
+
+Part 1 — Three book recommendations: Choose books that speak directly to this person's specific profile — their dominant traits, their growth edges, their stated clarity goal, and their life stage. For each book: title, author, and 2 sentences on why it's right for exactly this profile. Not generic recommendations — books that would feel like they were written for this person specifically. Draw from psychology, philosophy, memoir, and practical wisdom. Avoid clichés like 'The Power of Now' or 'Atomic Habits' unless they are genuinely the right fit for this specific profile.
+
+Part 2 — Three journal prompts: Write three prompts that emerge directly from this person's Growth Edges and Whole Picture. Each prompt should be a question that could only be written for someone with this exact profile. They should be slightly uncomfortable to answer — not painful, but honest. Format each as a standalone question with one sentence of context explaining why this prompt matters for their specific pattern.
+
+Part 3 — Three daily practices: Concrete, specific, small. Not 'meditate more' or 'practice gratitude.' Practices that directly address this person's specific patterns. For example: if they intellectualize, a practice might be 'Once a day, when someone asks how you are, answer with a feeling word instead of a situation update.' If they over-function for others, a practice might be 'When you notice yourself solving a problem someone didn't ask you to solve, pause and ask if they want help first.' Each practice should have a title and one sentence explaining the psychological purpose behind it for this profile.
+
+Tone for Section 9: This is where the report exhales. After 8 sections of honest psychological reflection, Section 9 should feel like a friend handing you a cup of coffee and saying 'okay, here's what I'd actually do if I were you.' Warm, specific, a little lighter than the sections before it. The reader has just done something brave by reading this far — honor that.
+
 Return ONLY a JSON object with this exact structure, no other text:
-{"sections": [{"title": "Who You Are", "content": "..."}, {"title": "How You Work", "content": "..."}, {"title": "How You Love", "content": "..."}, {"title": "What Drives You", "content": "..."}, {"title": "Your Growth Edges", "content": "..."}, {"title": "Your Path Forward", "content": "..."}, {"title": "The Sonder Lens", "content": "..."}, {"title": "The Whole Picture", "content": "..."}], "previewInsights": [{"title": "...", "insight": "..."}, {"title": "...", "insight": "..."}, {"title": "...", "insight": "..."}]}
+{"sections": [{"title": "Who You Are", "content": "..."}, {"title": "How You Work", "content": "..."}, {"title": "How You Love", "content": "..."}, {"title": "What Drives You", "content": "..."}, {"title": "Your Growth Edges", "content": "..."}, {"title": "Your Path Forward", "content": "..."}, {"title": "The Sonder Lens", "content": "..."}, {"title": "The Whole Picture", "content": "..."}, {"title": "Your Next 90 Days", "content": "..."}], "previewInsights": [{"title": "...", "insight": "..."}, {"title": "...", "insight": "..."}, {"title": "...", "insight": "..."}]}
 
 The previewInsights are the single most important conversion element in the product. A person reads these 3 cards and decides whether to pay $5. They must feel shockingly personal — not general psychology that applies to anyone.
 

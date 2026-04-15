@@ -173,7 +173,7 @@ export default function HomePage() {
               animationFillMode: "both",
             }}
           >
-            Every pattern running your life right now — in your relationships, your work, the arguments you keep having — was set in motion before you understood what was happening. Sonder maps the terrain.
+            You cannot honor the complexity of the people you love if you remain a stranger to your own. Sonder identifies the hidden geometry of who you are — the strengths that drive you and the patterns that keep you from being present.
           </p>
 
           {/* CTA button */}
@@ -350,6 +350,18 @@ export default function HomePage() {
         >
           Understand yourself better. Sonder more deeply.
         </p>
+        <div style={{ marginTop: "20px", display: "flex", gap: "24px", justifyContent: "center" }}>
+          <a href="/terms" style={{ fontSize: "12px", color: "#B8B2A8", textDecoration: "none" }}
+            onMouseEnter={e => (e.currentTarget.style.color = "#8A8278")}
+            onMouseLeave={e => (e.currentTarget.style.color = "#B8B2A8")}>
+            Terms of Service
+          </a>
+          <a href="/privacy" style={{ fontSize: "12px", color: "#B8B2A8", textDecoration: "none" }}
+            onMouseEnter={e => (e.currentTarget.style.color = "#8A8278")}
+            onMouseLeave={e => (e.currentTarget.style.color = "#B8B2A8")}>
+            Privacy Policy
+          </a>
+        </div>
       </footer>
     </div>
   );
