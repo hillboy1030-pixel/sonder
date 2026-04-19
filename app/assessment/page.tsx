@@ -125,7 +125,7 @@ export default function AssessmentPage() {
     return (
       <div className="min-h-screen bg-[#F9F7F4] flex flex-col">
         <header className="px-6 sm:px-10 py-4 border-b border-stone-light/30">
-          <span className="font-serif text-xl font-bold text-forest">Sonder</span>
+          <a href="/" className="font-serif text-xl font-bold text-forest hover:opacity-70 transition-opacity">Sonder</a>
         </header>
         <main className="flex-1 max-w-2xl w-full mx-auto px-6 sm:px-8 py-10 pb-20">
           <IntakeScreen context={context} onChange={setContext} onContinue={handleScreen1Continue} />
@@ -155,7 +155,7 @@ export default function AssessmentPage() {
     return (
       <div className="min-h-screen bg-[#F9F7F4] flex flex-col">
         <header className="px-6 sm:px-10 py-4 border-b border-stone-light/30">
-          <span className="font-serif text-xl font-bold text-forest">Sonder</span>
+          <a href="/" className="font-serif text-xl font-bold text-forest hover:opacity-70 transition-opacity">Sonder</a>
         </header>
         <main className="flex-1 max-w-2xl w-full mx-auto px-6 sm:px-8 py-10 pb-20">
           <IntakeScreen2 context={context} onChange={setContext} onContinue={handleScreen2Continue} />
@@ -173,7 +173,7 @@ export default function AssessmentPage() {
       {/* ── Sticky header + progress bar ── */}
       <header className="sticky top-0 z-50 shrink-0 bg-[#F9F7F4] border-b border-stone-light/30">
         <div className="px-6 sm:px-10 py-4 flex items-center justify-between">
-          <span className="font-serif text-xl font-bold text-forest">Sonder</span>
+          <a href="/" className="font-serif text-xl font-bold text-forest hover:opacity-70 transition-opacity">Sonder</a>
           <span className="text-sm text-stone">
             Section {sectionIndex + 1} of {SECTIONS.length}
           </span>

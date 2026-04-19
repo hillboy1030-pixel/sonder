@@ -85,6 +85,32 @@ Part 3 — Three daily practices: Concrete, specific, small. Not 'meditate more'
 
 Tone for Section 9: This is where the report exhales. After 8 sections of honest psychological reflection, Section 9 should feel like a friend handing you a cup of coffee and saying 'okay, here's what I'd actually do if I were you.' Warm, specific, a little lighter than the sections before it. The reader has just done something brave by reading this far — honor that.
 
+FORMAT FOR SECTION 9 — use this exact structure so it renders correctly as an outline. Do not deviate from it:
+
+**Books**
+
+**[Title]** — [Author]. [Sentence 1.] [Sentence 2.]
+
+**[Title]** — [Author]. [Sentence 1.] [Sentence 2.]
+
+**[Title]** — [Author]. [Sentence 1.] [Sentence 2.]
+
+**Journal Prompts**
+
+1. [Question]? [One sentence of context explaining why this prompt matters for this specific pattern.]
+
+2. [Question]? [One sentence of context.]
+
+3. [Question]? [One sentence of context.]
+
+**Daily Practices**
+
+**[Practice Name].** [One sentence: what to do and why.]
+
+**[Practice Name].** [One sentence.]
+
+**[Practice Name].** [One sentence.]
+
 Return ONLY a JSON object with this exact structure, no other text:
 {"sections": [{"title": "Who You Are", "content": "..."}, {"title": "How You Work", "content": "..."}, {"title": "How You Love", "content": "..."}, {"title": "What Drives You", "content": "..."}, {"title": "Your Growth Edges", "content": "..."}, {"title": "Your Path Forward", "content": "..."}, {"title": "The Sonder Lens", "content": "..."}, {"title": "The Whole Picture", "content": "..."}, {"title": "Your Next 90 Days", "content": "..."}]}`;
 
