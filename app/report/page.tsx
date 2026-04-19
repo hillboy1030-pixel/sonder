@@ -14,10 +14,14 @@ type Report = { sections: ReportSection[] };
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const LOADING_MESSAGES = [
-  "Reading between your answers...",
+  "Settling into the quiet...",
+  "Reading the geometry of your answers...",
   "Finding the patterns you haven't named yet...",
-  "Mapping the geometry of your inner life...",
-  "Almost there...",
+  "Mapping how you work and how you love...",
+  "Translating your inner world...",
+  "Writing the truths others haven't told you...",
+  "Shaping your next 90 days...",
+  "Almost there. This is worth waiting for.",
 ];
 
 const TODAY = new Date().toLocaleDateString("en-US", {
@@ -30,7 +34,7 @@ const TODAY = new Date().toLocaleDateString("en-US", {
 
 export default function ReportPage() {
   return (
-    <Suspense fallback={<LoadingState message="Loading..." />}>
+    <Suspense fallback={<LoadingState message={LOADING_MESSAGES[0]} />}>
       <ReportPageInner />
     </Suspense>
   );
@@ -50,8 +54,8 @@ function ReportPageInner() {
   useEffect(() => {
     if (report || error || paymentError) return;
     const interval = setInterval(
-      () => setMsgIndex((i) => (i + 1) % LOADING_MESSAGES.length),
-      2000
+      () => setMsgIndex((i) => Math.min(i + 1, LOADING_MESSAGES.length - 1)),
+      11000
     );
     return () => clearInterval(interval);
   }, [report, error, paymentError]);
@@ -172,26 +176,41 @@ function ReportPageInner() {
 function LoadingState({ message }: { message: string }) {
   return (
     <div className="min-h-screen bg-[#F9F7F4] flex flex-col items-center justify-center px-6">
-      <span className="font-serif text-3xl font-bold text-forest mb-10">
+      <span className="font-serif text-3xl font-bold text-forest mb-14">
         Sonder
       </span>
-      <div className="flex gap-2 mb-8">
-        {[0, 1, 2].map((i) => (
-          <span
-            key={i}
-            className="w-2 h-2 rounded-full bg-forest/60 inline-block animate-pulse"
-            style={{ animationDelay: `${i * 250}ms` }}
-          />
-        ))}
-      </div>
+
+      {/* Growing branch — slow vertical line that fills over 90 seconds */}
+      <svg width="3" height="96" viewBox="0 0 3 96" fill="none" aria-hidden="true">
+        <line
+          x1="1.5" y1="0" x2="1.5" y2="96"
+          stroke="#3D5A3E"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeOpacity="0.45"
+          strokeDasharray="96"
+          strokeDashoffset="96"
+          style={{ animation: "branchGrow 90s ease-in-out forwards" }}
+        />
+      </svg>
+
+      {/* Sequential message — key swap triggers fade-up re-animation */}
       <p
         key={message}
-        className="text-stone text-center text-sm sm:text-base max-w-xs leading-relaxed animate-fade-up"
+        className="mt-10 text-center max-w-xs animate-fade-up"
+        style={{
+          fontFamily: "var(--font-playfair), Georgia, serif",
+          fontStyle: "italic",
+          fontSize: "1.125rem",
+          lineHeight: "1.65",
+          color: "#3D5A3E",
+        }}
       >
         {message}
       </p>
-      <p className="mt-10 text-xs text-stone-light text-center max-w-xs">
-        We&rsquo;re reading your responses carefully. This usually takes 60–90 seconds.
+
+      <p className="mt-8 text-xs text-stone-light text-center">
+        This usually takes 60 to 90 seconds. Take a breath.
       </p>
     </div>
   );

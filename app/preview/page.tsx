@@ -13,10 +13,9 @@ type PreviewData = { previewInsights: PreviewInsight[] };
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const LOADING_MESSAGES = [
-  "Sondering your answers...",
-  "Mapping the geometry of your inner life...",
-  "Finding the patterns you haven't named yet...",
-  "Almost there...",
+  "Settling into the quiet...",
+  "Reading the geometry of your answers...",
+  "Finding the first three truths...",
 ];
 
 const LOCKED_SECTION_TITLES = [
@@ -50,8 +49,8 @@ export default function PreviewPage() {
   useEffect(() => {
     if (preview || error) return;
     const interval = setInterval(
-      () => setMsgIndex((i) => (i + 1) % LOADING_MESSAGES.length),
-      2000
+      () => setMsgIndex((i) => Math.min(i + 1, LOADING_MESSAGES.length - 1)),
+      7000
     );
     return () => clearInterval(interval);
   }, [preview, error]);
@@ -169,31 +168,42 @@ export default function PreviewPage() {
 
 function LoadingState({ message }: { message: string }) {
   return (
-    <div className="min-h-screen bg-[#F9F7F4] flex flex-col items-center justify-center px-6" style={{ backgroundColor: "#F9F7F4" }}>
-      <span className="font-serif text-3xl font-bold text-forest mb-10">
+    <div className="min-h-screen bg-[#F9F7F4] flex flex-col items-center justify-center px-6">
+      <span className="font-serif text-3xl font-bold text-forest mb-14">
         Sonder
       </span>
 
-      {/* Animated dots */}
-      <div className="flex gap-2 mb-8">
-        {[0, 1, 2].map((i) => (
-          <span
-            key={i}
-            className="w-2 h-2 rounded-full bg-forest/60 inline-block animate-pulse"
-            style={{ animationDelay: `${i * 250}ms` }}
-          />
-        ))}
-      </div>
+      {/* Growing branch — fills over ~25 seconds */}
+      <svg width="3" height="96" viewBox="0 0 3 96" fill="none" aria-hidden="true">
+        <line
+          x1="1.5" y1="0" x2="1.5" y2="96"
+          stroke="#3D5A3E"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeOpacity="0.45"
+          strokeDasharray="96"
+          strokeDashoffset="96"
+          style={{ animation: "branchGrow 25s ease-in-out forwards" }}
+        />
+      </svg>
 
+      {/* Sequential message — key swap triggers fade-up re-animation */}
       <p
         key={message}
-        className="text-stone text-center text-sm sm:text-base max-w-xs leading-relaxed animate-fade-up"
+        className="mt-10 text-center max-w-xs animate-fade-up"
+        style={{
+          fontFamily: "var(--font-playfair), Georgia, serif",
+          fontStyle: "italic",
+          fontSize: "1.125rem",
+          lineHeight: "1.65",
+          color: "#3D5A3E",
+        }}
       >
         {message}
       </p>
 
-      <p className="mt-10 text-xs text-stone-light text-center max-w-xs">
-        We&rsquo;re reading your responses carefully. This usually takes 15–30 seconds.
+      <p className="mt-8 text-xs text-stone-light text-center">
+        A moment while we look closely.
       </p>
     </div>
   );
