@@ -7,9 +7,8 @@ import { useRouter } from "next/navigation";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type ReportSection = { title: string; content: string };
 type PreviewInsight = { title: string; insight: string };
-type Report = { sections: ReportSection[]; previewInsights: PreviewInsight[] };
+type PreviewData = { previewInsights: PreviewInsight[] };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -39,46 +38,36 @@ const BLUR_PLACEHOLDER =
 
 export default function PreviewPage() {
   const router = useRouter();
-  const [report, setReport] = useState<Report | null>(null);
+  const [preview, setPreview] = useState<PreviewData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [msgIndex, setMsgIndex] = useState(0);
-  // Incrementing this triggers a re-fetch; starts at 0 for initial load
+  // Incrementing triggers a re-fetch of the preview (and restarts background report)
   const [retryCount, setRetryCount] = useState(0);
+  // Prevents the background report fetch from firing more than once per session
+  const backgroundStarted = useRef(false);
 
-  // Rotate loading messages while waiting
+  // Rotate loading messages while waiting for preview
   useEffect(() => {
-    if (report || error) return;
+    if (preview || error) return;
     const interval = setInterval(
       () => setMsgIndex((i) => (i + 1) % LOADING_MESSAGES.length),
       2000
     );
     return () => clearInterval(interval);
-  }, [report, error]);
+  }, [preview, error]);
 
-  // Fetch report — runs on mount and again each time retryCount increments
+  // Fetch preview — runs on mount and on retry
   useEffect(() => {
-    // On first load only: use cached report if present (e.g. user navigated back from Stripe)
-    if (retryCount === 0) {
-      const cached = localStorage.getItem("sonder_report");
-      if (cached) {
-        try {
-          setReport(JSON.parse(cached));
-          return;
-        } catch {
-          // cache corrupt — fall through to regenerate
-        }
-      }
-    }
-
-    const raw = localStorage.getItem("sonder_scores");
-    if (!raw) {
+    // Always parse scores first — needed both for cache-hit path and fresh fetch
+    const rawScores = localStorage.getItem("sonder_scores");
+    if (!rawScores) {
       router.replace("/assessment");
       return;
     }
 
     let scores: unknown;
     try {
-      scores = JSON.parse(raw);
+      scores = JSON.parse(rawScores);
     } catch {
       router.replace("/assessment");
       return;
@@ -89,29 +78,70 @@ export default function PreviewPage() {
       const rawContext = localStorage.getItem("sonder_context");
       if (rawContext) context = JSON.parse(rawContext);
     } catch {
-      // context is optional — proceed without it
+      // context is optional
     }
 
-    fetch("/api/generate-report", {
+    // Fire the background report fetch (sections only) — does not block the UI
+    function startBackgroundReport() {
+      if (backgroundStarted.current) return;
+      backgroundStarted.current = true;
+      fetch("/api/generate-report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scores, context }),
+      })
+        .then(async (res) => {
+          const data = await res.json().catch(() => ({ error: undefined }));
+          if (!res.ok) throw new Error(data?.error ?? "Report failed");
+          return data;
+        })
+        .then((data) => {
+          localStorage.setItem("sonder_report", JSON.stringify(data));
+          localStorage.removeItem("sonder_report_failed");
+        })
+        .catch(() => {
+          // Silent failure — report page will detect the flag and regenerate
+          localStorage.setItem("sonder_report_failed", "true");
+        });
+    }
+
+    // On first load: use cached preview if available
+    if (retryCount === 0) {
+      const cached = localStorage.getItem("sonder_preview");
+      if (cached) {
+        try {
+          setPreview(JSON.parse(cached));
+          // Still kick off background report if it hasn't been generated yet
+          if (!localStorage.getItem("sonder_report")) {
+            startBackgroundReport();
+          }
+          return;
+        } catch {
+          // cache corrupt — fall through to regenerate
+        }
+      }
+    }
+
+    // Fetch the 3 preview cards from the fast endpoint
+    fetch("/api/generate-preview", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ scores, context }),
     })
       .then(async (res) => {
-        // Fix 6: Parse the error body so we can show the specific message from the API
         const data = await res.json().catch(() => ({ error: undefined }));
         if (!res.ok) {
-          throw new Error(data?.error ?? "Report generation failed. Please try again.");
+          throw new Error(data?.error ?? "Preview generation failed. Please try again.");
         }
-        return data as Report;
+        return data as PreviewData;
       })
       .then((data) => {
-        // Fix 7: Persist to localStorage immediately so refreshes/back-navigation reuse it
-        localStorage.setItem("sonder_report", JSON.stringify(data));
-        setReport(data);
+        localStorage.setItem("sonder_preview", JSON.stringify(data));
+        setPreview(data);
+        // Preview is showing — start the full report in the background immediately
+        startBackgroundReport();
       })
       .catch((err: Error) => {
-        // Fix 6: Distinguish network failures from API errors
         const msg = err?.message ?? "";
         if (!msg || msg.toLowerCase().includes("fetch") || msg.toLowerCase().includes("network")) {
           setError("We couldn't reach our server. Check your connection and try again.");
@@ -121,16 +151,18 @@ export default function PreviewPage() {
       });
   }, [retryCount, router]);
 
-  // Fix 5: Retry re-triggers the fetch effect without sending the user back to assessment
   function handleRetry() {
     setError(null);
-    setReport(null);
+    setPreview(null);
+    backgroundStarted.current = false; // allow background to restart on retry
+    localStorage.removeItem("sonder_report");
+    localStorage.removeItem("sonder_report_failed");
     setRetryCount((c) => c + 1);
   }
 
   if (error) return <ErrorState message={error} onRetry={handleRetry} />;
-  if (!report) return <LoadingState message={LOADING_MESSAGES[msgIndex]} />;
-  return <ReportPreview report={report} />;
+  if (!preview) return <LoadingState message={LOADING_MESSAGES[msgIndex]} />;
+  return <ReportPreview previewInsights={preview.previewInsights} />;
 }
 
 // ─── Loading Screen ───────────────────────────────────────────────────────────
@@ -195,7 +227,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 
 // ─── Report Preview ───────────────────────────────────────────────────────────
 
-function ReportPreview({ report }: { report: Report }) {
+function ReportPreview({ previewInsights }: { previewInsights: PreviewInsight[] }) {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [shareLoading, setShareLoading] = useState(false);
@@ -280,7 +312,7 @@ function ReportPreview({ report }: { report: Report }) {
 
         {/* Free preview insight cards */}
         <div className="flex flex-col gap-4 mb-6">
-          {(report.previewInsights ?? []).map((insight, i) => (
+          {previewInsights.map((insight, i) => (
             <InsightCard key={i} insight={insight} index={i} />
           ))}
         </div>
@@ -368,7 +400,7 @@ function ReportPreview({ report }: { report: Report }) {
 
         {/* Cards */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "14px" }}>
-          {(report.previewInsights ?? []).map((insight, i) => (
+          {previewInsights.map((insight, i) => (
             <div
               key={i}
               style={{

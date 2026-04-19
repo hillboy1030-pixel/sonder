@@ -146,7 +146,7 @@ export default function AssessmentPage() {
           className="text-bark text-center text-lg sm:text-xl max-w-sm leading-relaxed animate-fade-up"
           style={{ fontFamily: "var(--font-playfair), Georgia, serif", fontStyle: "italic" }}
         >
-          To make your report truly accurate, we need to go one level deeper.
+          A few more questions, closer to the surface of things.
         </p>
       </div>
     );
@@ -307,13 +307,13 @@ function IntakeScreen({
     <div>
       <div className="mb-10">
         <p className="text-xs font-medium text-forest tracking-widest uppercase mb-1">
-          Getting Started
+          The first steps
         </p>
         <h1 className="font-serif text-3xl sm:text-4xl font-bold text-bark mb-2" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
-          Before we begin
+          Tell me about your life.
         </h1>
         <p className="text-stone text-sm">
-          A few quick details help us personalize your report.
+          I&rsquo;ll use this to write for you, not someone like you.
         </p>
       </div>
 
@@ -422,7 +422,7 @@ function IntakeScreen({
 
       <div className="mt-6 flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
         <p className="text-xs text-stone max-w-xs leading-relaxed text-center sm:text-left">
-          All fields optional except the last one. Your answers are never stored on our servers.
+          Everything here is optional. Nothing is stored on our servers.
         </p>
         <button
           onClick={onContinue}
@@ -457,13 +457,13 @@ function IntakeScreen2({
     <div>
       <div className="mb-10">
         <p className="text-xs font-medium text-forest tracking-widest uppercase mb-1">
-          A Few Deeper Questions
+          Going inward
         </p>
         <h1 className="font-serif text-3xl sm:text-4xl font-bold text-bark mb-2" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
-          One level deeper
+          Now tell me about your inner world.
         </h1>
         <p className="text-stone text-sm">
-          These take 2 minutes and make your report significantly more accurate.
+          Answer only what feels honest. The report becomes more precise with each answer — but it will be good no matter what you share.
         </p>
       </div>
 
@@ -548,7 +548,7 @@ function IntakeScreen2({
 
       <div className="mt-10 flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
         <p className="text-xs text-stone max-w-xs leading-relaxed text-center sm:text-left">
-          All fields optional except the last one. Your answers are never stored on our servers.
+          Your answers are yours alone. Nothing is stored.
         </p>
         <button
           onClick={onContinue}

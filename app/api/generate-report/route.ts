@@ -86,28 +86,7 @@ Part 3 — Three daily practices: Concrete, specific, small. Not 'meditate more'
 Tone for Section 9: This is where the report exhales. After 8 sections of honest psychological reflection, Section 9 should feel like a friend handing you a cup of coffee and saying 'okay, here's what I'd actually do if I were you.' Warm, specific, a little lighter than the sections before it. The reader has just done something brave by reading this far — honor that.
 
 Return ONLY a JSON object with this exact structure, no other text:
-{"sections": [{"title": "Who You Are", "content": "..."}, {"title": "How You Work", "content": "..."}, {"title": "How You Love", "content": "..."}, {"title": "What Drives You", "content": "..."}, {"title": "Your Growth Edges", "content": "..."}, {"title": "Your Path Forward", "content": "..."}, {"title": "The Sonder Lens", "content": "..."}, {"title": "The Whole Picture", "content": "..."}, {"title": "Your Next 90 Days", "content": "..."}], "previewInsights": [{"title": "...", "insight": "..."}, {"title": "...", "insight": "..."}, {"title": "...", "insight": "..."}]}
-
-The previewInsights are the single most important conversion element in the product. A person reads these 3 cards and decides whether to pay $5. They must feel shockingly personal — not general psychology that applies to anyone.
-
-The 3 cards must cover three different domains:
-Card 1: Their Internal Monologue — what is actually happening inside their head that others never see
-Card 2: Their Public Face — the gap between how they appear to others and who they actually are
-Card 3: Their Hidden Drive — the deeper motivation underneath their surface-level goals that even they may not have named
-
-Each insight MUST:
-- Name a specific tension between two of their actual score combinations — e.g. high Openness + high Conscientiousness, or high Agreeableness + high Avoidant attachment. Reference the actual interaction, not a single trait in isolation
-- Include one concrete, non-psychological noun that grounds the insight in real daily life — something like 'the unread books on your nightstand', 'the email you drafted but never sent', 'the way you over-prepare for a simple conversation'. Make it specific enough to feel private
-- Say something the person has felt their whole life but never had precise words for
-
-Each insight MUST NOT:
-- Use psychology jargon or framework names like Big Five, attachment theory, Holland Code
-- Make observations that would be true for most people
-- Be flattering or encouraging — surprising and precise beats comfortable
-
-Title rules: 2-4 words, reads like a private nickname for a pattern they recognize in themselves. Examples of the right tone: 'The Diligent Architect', 'The Quiet Storm', 'Beautiful Trap', 'The Glass Wall'. Not: 'Workplace Tension', 'Analysis Paralysis', 'Creative Strength'.
-Insight: 2-3 sentences. Tone is a close friend who has studied psychology and is finally saying the thing out loud. Not a therapist, not a life coach.
-The three cards together should make the person feel simultaneously seen, slightly exposed, and certain the full report will change something for them.`;
+{"sections": [{"title": "Who You Are", "content": "..."}, {"title": "How You Work", "content": "..."}, {"title": "How You Love", "content": "..."}, {"title": "What Drives You", "content": "..."}, {"title": "Your Growth Edges", "content": "..."}, {"title": "Your Path Forward", "content": "..."}, {"title": "The Sonder Lens", "content": "..."}, {"title": "The Whole Picture", "content": "..."}, {"title": "Your Next 90 Days", "content": "..."}]}`;
 
 export async function POST(request: NextRequest) {
   try {
@@ -125,7 +104,7 @@ export async function POST(request: NextRequest) {
     // Use streaming to avoid timeout on long completions, collect with finalMessage()
     const stream = client.messages.stream({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 16000,
+      max_tokens: 14000,
       system: SYSTEM_PROMPT,
       messages: [
         {
@@ -154,24 +133,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Strip any markdown fences Claude might add despite instructions
-    const raw = textBlock.text.replace(/^```json\s*/i, "").replace(/```\s*$/i, "").trim();
+    // Always log the raw response in dev so failures are immediately diagnosable
+    const text = textBlock.text;
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[generate-report] raw response (first 500 chars):", text.slice(0, 500));
+    }
+
+    // Extract the JSON object by finding our expected root key, walking back to the
+    // opening { and forward counting brace depth to the matching }.
+    const raw = extractJSONObject(text, "sections");
+
+    if (!raw) {
+      console.error("[generate-report] No JSON object found. Full response:", text);
+      return Response.json(
+        { error: "Failed to parse report response — please try again" },
+        { status: 500 }
+      );
+    }
 
     try {
       const parsed = JSON.parse(raw);
 
-      // Fix 4: Validate the response has the expected structure before returning
-      if (
-        !Array.isArray(parsed.sections) ||
-        parsed.sections.length < 9 ||
-        !Array.isArray(parsed.previewInsights) ||
-        parsed.previewInsights.length !== 3
-      ) {
+      // Validate the response has the expected structure before returning
+      if (!Array.isArray(parsed.sections) || parsed.sections.length < 9) {
         console.error(
           "Report structure invalid — sections:",
           parsed.sections?.length ?? "missing",
-          "previewInsights:",
-          parsed.previewInsights?.length ?? "missing"
+          "Raw:",
+          raw.slice(0, 300)
         );
         return Response.json(
           { error: "Report format error — please try again" },
@@ -180,18 +169,23 @@ export async function POST(request: NextRequest) {
       }
 
       return Response.json(parsed);
-    } catch {
-      console.error("JSON parse failed. Raw response:", raw.slice(0, 500));
+    } catch (parseErr) {
+      console.error("[generate-report] JSON parse failed. Error:", parseErr, "\nRaw:", raw.slice(0, 1000));
       return Response.json(
         { error: "Failed to parse report response — please try again" },
         { status: 500 }
       );
     }
   } catch (error) {
-    console.error("Report generation error:", error);
+    console.error("[generate-report] error:", error);
 
-    // Fix 3: Return specific messages for known Anthropic error types
     if (error instanceof Anthropic.APIError) {
+      if (error.status === 402) {
+        return Response.json(
+          { error: "API credit balance is too low. Please add credits and try again." },
+          { status: 402 }
+        );
+      }
       if (error.status === 429) {
         return Response.json(
           { error: "We are temporarily rate limited. Please wait 30 seconds and try again." },
@@ -211,4 +205,39 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * Extracts the first complete JSON object containing `rootKey` from arbitrary text.
+ * Handles preamble text, markdown fences, and trailing notes robustly.
+ * Uses key-based search + brace depth counting — immune to { } in surrounding text.
+ */
+function extractJSONObject(text: string, rootKey: string): string | null {
+  // Fast path: text is already clean JSON
+  const trimmed = text.trim();
+  if (trimmed.startsWith("{")) return trimmed;
+
+  // Find the root key, walk backward to the opening {, then count brace depth forward
+  const keyIdx = text.indexOf(`"${rootKey}"`);
+  if (keyIdx !== -1) {
+    for (let i = keyIdx - 1; i >= 0; i--) {
+      if (text[i] === "{") {
+        let depth = 0;
+        for (let j = i; j < text.length; j++) {
+          if (text[j] === "{") depth++;
+          else if (text[j] === "}") {
+            depth--;
+            if (depth === 0) return text.slice(i, j + 1);
+          }
+        }
+        break; // unbalanced braces — fall through to next strategy
+      }
+    }
+  }
+
+  // Fallback: strip markdown fences and return the remainder
+  const stripped = trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
+  if (stripped.startsWith("{")) return stripped;
+
+  return null;
 }

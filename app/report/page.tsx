@@ -8,7 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type ReportSection = { title: string; content: string };
-type Report = { sections: ReportSection[]; previewInsights: unknown[] };
+type Report = { sections: ReportSection[] };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -42,6 +42,8 @@ function ReportPageInner() {
   const [error, setError] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState(false);
   const [msgIndex, setMsgIndex] = useState(0);
+  // Incrementing triggers a fresh report regeneration without re-verifying payment
+  const [retryCount, setRetryCount] = useState(0);
 
   // Rotate loading messages while waiting
   useEffect(() => {
@@ -53,56 +55,54 @@ function ReportPageInner() {
     return () => clearInterval(interval);
   }, [report, error, paymentError]);
 
-  // Verify payment then load or regenerate report
   useEffect(() => {
     const sessionId = searchParams.get("session_id");
-
     const isTester = searchParams.get("tester") === "true";
 
     async function load() {
-      // TESTER BYPASS — remove before public launch
-      if (isTester) {
-        console.log("TESTER MODE — remove before public launch");
-        const cached = localStorage.getItem("sonder_report");
-        if (!cached) {
-          router.replace("/preview");
-          return;
-        }
-        // Fall through to load from cache below
-      }
-      // 1. If session_id present, verify payment with Stripe
-      else if (sessionId) {
-        const res = await fetch("/api/verify-payment", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ session_id: sessionId }),
-        });
-        const { verified } = await res.json();
-        if (!verified) {
-          setPaymentError(true);
-          return;
-        }
-      } else {
-        // No session_id — only allow if a cached report exists (dev / direct nav)
-        const cached = localStorage.getItem("sonder_report");
-        if (!cached) {
-          router.replace("/preview");
-          return;
+      // Payment verification only on initial load — retries skip this
+      if (retryCount === 0) {
+        if (isTester) {
+          // TESTER BYPASS — remove before public launch
+          console.log("TESTER MODE — remove before public launch");
+          // Fall through to load/regenerate below
+        } else if (sessionId) {
+          // Verify payment with Stripe
+          const res = await fetch("/api/verify-payment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ session_id: sessionId }),
+          });
+          const { verified } = await res.json();
+          if (!verified) {
+            setPaymentError(true);
+            return;
+          }
+        } else {
+          // No session_id — only allow if a cached report exists (dev / direct nav)
+          const cached = localStorage.getItem("sonder_report");
+          if (!cached) {
+            router.replace("/preview");
+            return;
+          }
         }
       }
 
-      // 2. Try cached report first
-      const cached = localStorage.getItem("sonder_report");
-      if (cached) {
+      // Use cached report if present and background generation didn't fail
+      const failed = localStorage.getItem("sonder_report_failed") === "true";
+      const cachedJson = localStorage.getItem("sonder_report");
+      if (cachedJson && !failed) {
         try {
-          setReport(JSON.parse(cached));
+          setReport(JSON.parse(cachedJson));
           return;
         } catch {
-          // fall through to regenerate
+          // cache corrupt — fall through to regenerate
         }
       }
 
-      // 3. Regenerate from scores
+      // Clear failed flag and regenerate fresh
+      localStorage.removeItem("sonder_report_failed");
+
       const rawScores = localStorage.getItem("sonder_scores");
       if (!rawScores) {
         router.replace("/assessment");
@@ -122,7 +122,7 @@ function ReportPageInner() {
         const rawContext = localStorage.getItem("sonder_context");
         if (rawContext) context = JSON.parse(rawContext);
       } catch {
-        // context is optional — proceed without it
+        // context is optional
       }
 
       fetch("/api/generate-report", {
@@ -130,22 +130,38 @@ function ReportPageInner() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ scores, context }),
       })
-        .then((res) => {
-          if (!res.ok) throw new Error("Report generation failed. Please try again.");
-          return res.json();
+        .then(async (res) => {
+          const data = await res.json().catch(() => ({ error: undefined }));
+          if (!res.ok) {
+            throw new Error(data?.error ?? "Report generation failed. Please try again.");
+          }
+          return data as Report;
         })
-        .then((data: Report) => {
+        .then((data) => {
           localStorage.setItem("sonder_report", JSON.stringify(data));
           setReport(data);
         })
-        .catch((err: Error) => setError(err.message));
+        .catch((err: Error) => {
+          const msg = err?.message ?? "";
+          if (!msg || msg.toLowerCase().includes("fetch") || msg.toLowerCase().includes("network")) {
+            setError("We couldn't reach our server. Check your connection and try again.");
+          } else {
+            setError(msg);
+          }
+        });
     }
 
     load();
-  }, [router, searchParams]);
+  }, [retryCount, router, searchParams]);
+
+  function handleRetry() {
+    setError(null);
+    setReport(null);
+    setRetryCount((c) => c + 1);
+  }
 
   if (paymentError) return <PaymentErrorState />;
-  if (error) return <ErrorState message={error} />;
+  if (error) return <ErrorState message={error} onRetry={handleRetry} />;
   if (!report) return <LoadingState message={LOADING_MESSAGES[msgIndex]} />;
   return <FullReport report={report} />;
 }
@@ -174,7 +190,7 @@ function LoadingState({ message }: { message: string }) {
         {message}
       </p>
       <p className="mt-10 text-xs text-stone-light text-center max-w-xs">
-        We&rsquo;re reading your responses carefully. This usually takes 15–30 seconds.
+        We&rsquo;re reading your responses carefully. This usually takes 60–90 seconds.
       </p>
     </div>
   );
@@ -201,17 +217,23 @@ function PaymentErrorState() {
   );
 }
 
-function ErrorState({ message }: { message: string }) {
+function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div className="min-h-screen bg-[#F9F7F4] flex flex-col items-center justify-center px-6 text-center">
       <span className="font-serif text-3xl font-bold text-forest mb-6">Sonder</span>
       <p className="text-bark font-medium mb-2">Something went wrong</p>
       <p className="text-stone text-sm mb-8 max-w-sm">{message}</p>
-      <a
-        href="/assessment"
-        className="bg-forest text-parchment px-7 py-3 rounded-full font-medium text-sm hover:bg-forest-light transition-colors"
+      <button
+        onClick={onRetry}
+        className="bg-forest text-parchment px-7 py-3 rounded-full font-medium text-sm hover:bg-forest-light transition-colors mb-4"
       >
-        Back to Assessment
+        Try Again
+      </button>
+      <a
+        href="/preview"
+        className="text-stone text-sm underline underline-offset-2 hover:text-bark transition-colors"
+      >
+        Back to Preview
       </a>
     </div>
   );
