@@ -42,6 +42,8 @@ export default function PreviewPage() {
   const [report, setReport] = useState<Report | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [msgIndex, setMsgIndex] = useState(0);
+  // Incrementing this triggers a re-fetch; starts at 0 for initial load
+  const [retryCount, setRetryCount] = useState(0);
 
   // Rotate loading messages while waiting
   useEffect(() => {
@@ -53,20 +55,21 @@ export default function PreviewPage() {
     return () => clearInterval(interval);
   }, [report, error]);
 
-  // Fetch report on mount — use cache if available to avoid redundant API calls
+  // Fetch report — runs on mount and again each time retryCount increments
   useEffect(() => {
-    // 1. Use cached report if present (e.g. user navigated back from Stripe/report)
-    const cached = localStorage.getItem("sonder_report");
-    if (cached) {
-      try {
-        setReport(JSON.parse(cached));
-        return;
-      } catch {
-        // cache corrupt — fall through to regenerate
+    // On first load only: use cached report if present (e.g. user navigated back from Stripe)
+    if (retryCount === 0) {
+      const cached = localStorage.getItem("sonder_report");
+      if (cached) {
+        try {
+          setReport(JSON.parse(cached));
+          return;
+        } catch {
+          // cache corrupt — fall through to regenerate
+        }
       }
     }
 
-    // 2. Need scores to generate
     const raw = localStorage.getItem("sonder_scores");
     if (!raw) {
       router.replace("/assessment");
@@ -94,18 +97,38 @@ export default function PreviewPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ scores, context }),
     })
-      .then((res) => {
-        if (!res.ok) throw new Error("Report generation failed. Please try again.");
-        return res.json();
+      .then(async (res) => {
+        // Fix 6: Parse the error body so we can show the specific message from the API
+        const data = await res.json().catch(() => ({ error: undefined }));
+        if (!res.ok) {
+          throw new Error(data?.error ?? "Report generation failed. Please try again.");
+        }
+        return data as Report;
       })
-      .then((data: Report) => {
+      .then((data) => {
+        // Fix 7: Persist to localStorage immediately so refreshes/back-navigation reuse it
         localStorage.setItem("sonder_report", JSON.stringify(data));
         setReport(data);
       })
-      .catch((err: Error) => setError(err.message));
-  }, [router]);
+      .catch((err: Error) => {
+        // Fix 6: Distinguish network failures from API errors
+        const msg = err?.message ?? "";
+        if (!msg || msg.toLowerCase().includes("fetch") || msg.toLowerCase().includes("network")) {
+          setError("We couldn't reach our server. Check your connection and try again.");
+        } else {
+          setError(msg);
+        }
+      });
+  }, [retryCount, router]);
 
-  if (error) return <ErrorState message={error} />;
+  // Fix 5: Retry re-triggers the fetch effect without sending the user back to assessment
+  function handleRetry() {
+    setError(null);
+    setReport(null);
+    setRetryCount((c) => c + 1);
+  }
+
+  if (error) return <ErrorState message={error} onRetry={handleRetry} />;
   if (!report) return <LoadingState message={LOADING_MESSAGES[msgIndex]} />;
   return <ReportPreview report={report} />;
 }
@@ -146,7 +169,7 @@ function LoadingState({ message }: { message: string }) {
 
 // ─── Error Screen ─────────────────────────────────────────────────────────────
 
-function ErrorState({ message }: { message: string }) {
+function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div className="min-h-screen bg-[#F9F7F4] flex flex-col items-center justify-center px-6 text-center">
       <span className="font-serif text-3xl font-bold text-forest mb-6">
@@ -154,9 +177,15 @@ function ErrorState({ message }: { message: string }) {
       </span>
       <p className="text-bark font-medium mb-2">Something went wrong</p>
       <p className="text-stone text-sm mb-8 max-w-sm">{message}</p>
+      <button
+        onClick={onRetry}
+        className="bg-forest text-parchment px-7 py-3 rounded-sm font-medium text-sm hover:bg-forest-light transition-colors mb-4"
+      >
+        Try Again
+      </button>
       <a
         href="/assessment"
-        className="bg-forest text-parchment px-7 py-3 rounded-sm font-medium text-sm hover:bg-forest-light transition-colors"
+        className="text-stone text-sm underline underline-offset-2 hover:text-bark transition-colors"
       >
         Back to Assessment
       </a>

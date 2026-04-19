@@ -1,6 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest } from "next/server";
 
+// Fix 1: Give the function up to 5 minutes on Vercel Pro (upgrade from Hobby to unlock this)
+export const maxDuration = 300;
+
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
@@ -134,6 +137,15 @@ export async function POST(request: NextRequest) {
 
     const message = await stream.finalMessage();
 
+    // Fix 2: Detect truncated response before trying to parse
+    if (message.stop_reason === "max_tokens") {
+      console.error("Report generation hit max_tokens limit — response was truncated");
+      return Response.json(
+        { error: "Report was cut short — please try again" },
+        { status: 500 }
+      );
+    }
+
     const textBlock = message.content.find((b) => b.type === "text");
     if (!textBlock || textBlock.type !== "text") {
       return Response.json(
@@ -147,18 +159,55 @@ export async function POST(request: NextRequest) {
 
     try {
       const parsed = JSON.parse(raw);
+
+      // Fix 4: Validate the response has the expected structure before returning
+      if (
+        !Array.isArray(parsed.sections) ||
+        parsed.sections.length < 9 ||
+        !Array.isArray(parsed.previewInsights) ||
+        parsed.previewInsights.length !== 3
+      ) {
+        console.error(
+          "Report structure invalid — sections:",
+          parsed.sections?.length ?? "missing",
+          "previewInsights:",
+          parsed.previewInsights?.length ?? "missing"
+        );
+        return Response.json(
+          { error: "Report format error — please try again" },
+          { status: 500 }
+        );
+      }
+
       return Response.json(parsed);
     } catch {
       console.error("JSON parse failed. Raw response:", raw.slice(0, 500));
       return Response.json(
-        { error: "Failed to parse report response" },
+        { error: "Failed to parse report response — please try again" },
         { status: 500 }
       );
     }
   } catch (error) {
     console.error("Report generation error:", error);
+
+    // Fix 3: Return specific messages for known Anthropic error types
+    if (error instanceof Anthropic.APIError) {
+      if (error.status === 429) {
+        return Response.json(
+          { error: "We are temporarily rate limited. Please wait 30 seconds and try again." },
+          { status: 429 }
+        );
+      }
+      if (error.status >= 500) {
+        return Response.json(
+          { error: "Our AI is briefly unavailable. Please try again in a moment." },
+          { status: 503 }
+        );
+      }
+    }
+
     return Response.json(
-      { error: "Failed to generate report" },
+      { error: "Something went wrong. Please try again." },
       { status: 500 }
     );
   }
