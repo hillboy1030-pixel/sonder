@@ -28,8 +28,8 @@
   }
 }
 
-@keyframes branchGrow {
-  from { stroke-dashoffset: 96; }
+@keyframes ringFill {
+  from { stroke-dashoffset: 150.8; }
   to   { stroke-dashoffset: 0; }
 }
 

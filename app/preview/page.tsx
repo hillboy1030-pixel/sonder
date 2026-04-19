@@ -173,17 +173,20 @@ function LoadingState({ message }: { message: string }) {
         Sonder
       </span>
 
-      {/* Growing branch — fills over ~25 seconds */}
-      <svg width="3" height="96" viewBox="0 0 3 96" fill="none" aria-hidden="true">
-        <line
-          x1="1.5" y1="0" x2="1.5" y2="96"
+      {/* Circular progress ring — fills over 10 seconds */}
+      <svg width="60" height="60" viewBox="0 0 60 60" fill="none" aria-hidden="true">
+        {/* Track */}
+        <circle cx="30" cy="30" r="24" stroke="#3D5A3E" strokeWidth="2" strokeOpacity="0.12" />
+        {/* Arc */}
+        <circle
+          cx="30" cy="30" r="24"
           stroke="#3D5A3E"
-          strokeWidth="1.5"
+          strokeWidth="2"
           strokeLinecap="round"
-          strokeOpacity="0.45"
-          strokeDasharray="96"
-          strokeDashoffset="96"
-          style={{ animation: "branchGrow 25s ease-in-out forwards" }}
+          strokeDasharray="150.8"
+          strokeDashoffset="150.8"
+          transform="rotate(-90 30 30)"
+          style={{ animation: "ringFill 10s linear forwards" }}
         />
       </svg>
 

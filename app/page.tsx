@@ -49,7 +49,7 @@ export default function HomePage() {
         {/* Parallax forest image */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="https://images.unsplash.com/photo-1511497584788-876760111969?w=1920&q=80"
+          src="https://images.unsplash.com/photo-1448375240586-882707db888b?w=2400&q=85"
           alt=""
           aria-hidden="true"
           style={{
@@ -155,7 +155,7 @@ export default function HomePage() {
               animationFillMode: "both",
             }}
           >
-            The first journey is inward.
+            Come inward.
           </h1>
 
           {/* Subheadline */}
@@ -173,7 +173,7 @@ export default function HomePage() {
               animationFillMode: "both",
             }}
           >
-            You cannot honor the complexity of the people you love if you remain a stranger to your own. Sonder identifies the hidden geometry of who you are — the strengths that drive you and the patterns that keep you from being present.
+            The most unexamined territory you will ever explore is the one you wake up inside every morning. Sonder is a map.
           </p>
 
           {/* CTA button */}
@@ -188,6 +188,24 @@ export default function HomePage() {
           >
             <HeroButton />
           </div>
+
+          {/* Tagline below CTA */}
+          <p
+            style={{
+              fontFamily: "var(--font-playfair), Georgia, serif",
+              fontStyle: "italic",
+              fontSize: "14px",
+              color: "rgba(255,255,255,0.52)",
+              marginTop: "20px",
+              animationName: "fadeUp",
+              animationDuration: "0.9s",
+              animationTimingFunction: "ease-out",
+              animationDelay: "750ms",
+              animationFillMode: "both",
+            }}
+          >
+            Understand yourself better. Sonder more deeply.
+          </p>
         </div>
 
         {/* Scroll indicator — thin vertical line */}
@@ -249,7 +267,7 @@ export default function HomePage() {
                   gap: "20px",
                   alignItems: "start",
                   padding: "40px 0",
-                  opacity: steps.visible ? 1 : 0,
+                  opacity: steps.visible ? (step.comingSoon ? 0.6 : 1) : 0,
                   transform: steps.visible ? "translateY(0)" : "translateY(28px)",
                   transition: `opacity 0.7s ease-out ${i * 140 + 180}ms, transform 0.7s ease-out ${i * 140 + 180}ms`,
                 }}
@@ -259,7 +277,7 @@ export default function HomePage() {
                     fontFamily: "var(--font-playfair), Georgia, serif",
                     fontSize: "clamp(36px, 4vw, 52px)",
                     fontWeight: 700,
-                    color: "rgba(61,90,62,0.28)",
+                    color: step.comingSoon ? "rgba(61,90,62,0.14)" : "rgba(61,90,62,0.28)",
                     lineHeight: 1,
                     paddingTop: "2px",
                   }}
@@ -267,12 +285,27 @@ export default function HomePage() {
                   {step.number}
                 </span>
                 <div>
+                  {step.comingSoon && (
+                    <p
+                      style={{
+                        fontSize: "10px",
+                        fontStyle: "italic",
+                        letterSpacing: "0.1em",
+                        color: "#3D5A3E",
+                        opacity: 0.6,
+                        marginBottom: "8px",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Coming soon
+                    </p>
+                  )}
                   <h3
                     style={{
                       fontFamily: "var(--font-playfair), Georgia, serif",
                       fontSize: "clamp(17px, 2vw, 21px)",
                       fontWeight: 600,
-                      color: "#2A2620",
+                      color: step.comingSoon ? "#4A4540" : "#2A2620",
                       marginBottom: "10px",
                     }}
                   >
@@ -338,17 +371,6 @@ export default function HomePage() {
           }}
         >
           Your privacy is protected — we never store your responses or results on our servers.
-        </p>
-        <p
-          style={{
-            fontSize: "13px",
-            fontFamily: "var(--font-playfair), Georgia, serif",
-            fontStyle: "italic",
-            color: "#B8B2A8",
-            marginTop: "20px",
-          }}
-        >
-          Understand yourself better. Sonder more deeply.
         </p>
         <div style={{ marginTop: "20px", display: "flex", gap: "24px", justifyContent: "center" }}>
           <a href="/terms" style={{ fontSize: "12px", color: "#B8B2A8", textDecoration: "none" }}
@@ -421,5 +443,12 @@ const STEPS = [
     title: "Unlock your full report",
     description:
       "For a one-time $5 payment, receive your complete eight-section psychological portrait.",
+  },
+  {
+    number: "04",
+    title: "The Sonder Journal",
+    description:
+      "Your report becomes a physical book — thick paper, a full year of prompts crafted from your profile, designed to sit on your nightstand. Not more content. Just a quiet invitation to keep sondering.",
+    comingSoon: true,
   },
 ];
