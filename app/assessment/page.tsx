@@ -130,11 +130,10 @@ export default function AssessmentPage() {
         <main className="flex-1 max-w-2xl w-full mx-auto px-6 sm:px-8 py-10 pb-20">
           <IntakeScreen context={context} onChange={setContext} onContinue={handleScreen1Continue} />
         </main>
-        {process.env.NODE_ENV === "development" && (
-          <button onClick={handleDevFill} className="fixed bottom-4 left-4 z-50 bg-bark text-parchment text-xs font-medium px-3 py-2 rounded opacity-70 hover:opacity-100 transition-opacity">
-            Quick Test Fill
-          </button>
-        )}
+        {/* TODO: remove before public launch */}
+        <button onClick={handleDevFill} className="fixed bottom-4 left-4 z-50 bg-bark text-parchment text-xs font-medium px-3 py-2 rounded opacity-70 hover:opacity-100 transition-opacity">
+          Founder Test
+        </button>
       </div>
     );
   }
@@ -161,11 +160,10 @@ export default function AssessmentPage() {
         <main className="flex-1 max-w-2xl w-full mx-auto px-6 sm:px-8 py-10 pb-20">
           <IntakeScreen2 context={context} onChange={setContext} onContinue={handleScreen2Continue} />
         </main>
-        {process.env.NODE_ENV === "development" && (
-          <button onClick={handleDevFill} className="fixed bottom-4 left-4 z-50 bg-bark text-parchment text-xs font-medium px-3 py-2 rounded opacity-70 hover:opacity-100 transition-opacity">
-            Quick Test Fill
-          </button>
-        )}
+        {/* TODO: remove before public launch */}
+        <button onClick={handleDevFill} className="fixed bottom-4 left-4 z-50 bg-bark text-parchment text-xs font-medium px-3 py-2 rounded opacity-70 hover:opacity-100 transition-opacity">
+          Founder Test
+        </button>
       </div>
     );
   }
@@ -276,15 +274,13 @@ export default function AssessmentPage() {
         </div>
       </main>
 
-      {/* Dev-only quick fill — never shown in production */}
-      {process.env.NODE_ENV === "development" && (
-        <button
-          onClick={handleDevFill}
-          className="fixed bottom-4 left-4 z-50 bg-bark text-parchment text-xs font-medium px-3 py-2 rounded opacity-70 hover:opacity-100 transition-opacity"
-        >
-          Quick Test Fill
-        </button>
-      )}
+      {/* TODO: remove before public launch */}
+      <button
+        onClick={handleDevFill}
+        className="fixed bottom-4 left-4 z-50 bg-bark text-parchment text-xs font-medium px-3 py-2 rounded opacity-70 hover:opacity-100 transition-opacity"
+      >
+        Founder Test
+      </button>
     </div>
   );
 }
