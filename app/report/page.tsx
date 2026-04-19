@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+type PreviewInsight = { title: string; insight: string };
 type ReportSection = { title: string; content: string };
 type Report = { sections: ReportSection[] };
 
@@ -241,7 +242,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 
 // ─── PDF Generation ───────────────────────────────────────────────────────────
 
-async function generatePDF(report: Report): Promise<void> {
+async function generatePDF(report: Report, insights: PreviewInsight[]): Promise<void> {
   const { jsPDF } = await import("jspdf");
 
   // Page dimensions (letter, points)
@@ -253,17 +254,28 @@ async function generatePDF(report: Report): Promise<void> {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
 
   // ── Color palettes ──────────────────────────────────────────────────────────
+  // Sourced from globals.css @theme values
   type RGB = [number, number, number];
-  const FOREST:      RGB = [45,  71,  57 ];
-  const BARK:        RGB = [61,  43,  31 ];
-  const BARK_LIGHT:  RGB = [90,  68,  52 ];
-  const STONE:       RGB = [122, 112, 104];
-  const STONE_LIGHT: RGB = [175, 165, 155];
-  const NUM_COLOR:   RGB = [208, 200, 191];
-  const DIVIDER_C:   RGB = [215, 207, 198];
+  const FOREST:       RGB = [61,  90,  62 ];  // #3D5A3E
+  const BARK:         RGB = [42,  38,  32 ];  // #2A2620
+  const BARK_LIGHT:   RGB = [74,  69,  64 ];  // #4A4540
+  const STONE:        RGB = [138, 130, 120];  // #8A8278
+  const STONE_LIGHT:  RGB = [184, 178, 168];  // #B8B2A8
+  // Section number: bark at ~20% on #F9F7F4
+  const NUM_COLOR:    RGB = [208, 205, 202];
+  // Rule / divider: stone-light at ~30% on #F9F7F4
+  const DIVIDER_C:    RGB = [230, 226, 221];
+  // Insight card fills (pre-mixed onto #F9F7F4 bg)
+  // bg-forest/6 on #F9F7F4: [238, 238, 233]
+  // bg-sage/10 on #F9F7F4 (sage=#7A9E7E): [236, 238, 232]
+  const CARD_FILL_A:  RGB = [238, 238, 233];
+  const CARD_FILL_B:  RGB = [236, 238, 232];
+  // border-stone-light/30 on #F9F7F4: [230, 226, 221]
+  const CARD_BORDER:  RGB = [230, 226, 221];
 
   const tc = (c: RGB) => doc.setTextColor(c[0], c[1], c[2]);
   const lc = (c: RGB) => doc.setDrawColor(c[0], c[1], c[2]);
+  const fc = (c: RGB) => doc.setFillColor(c[0], c[1], c[2]);
 
   // ── Rich text helpers ───────────────────────────────────────────────────────
   type Seg = { text: string; bold: boolean };
@@ -319,9 +331,13 @@ async function generatePDF(report: Report): Promise<void> {
   };
 
   // ── Pagination ──────────────────────────────────────────────────────────────
+  // pageNum tracks the current page; footer is stamped when leaving a page.
+  // pastCover gates the footer so the cover never gets a page number.
   let pageNum = 1;
+  let pastCover = false;
 
   const addFooter = () => {
+    if (!pastCover) return;
     doc.setFont("times", "normal");
     doc.setFontSize(8);
     tc(STONE_LIGHT);
@@ -330,9 +346,10 @@ async function generatePDF(report: Report): Promise<void> {
   };
 
   const newPage = () => {
-    addFooter();
+    addFooter();      // stamp footer on the page we're leaving
     doc.addPage();
     pageNum++;
+    pastCover = true; // everything after the cover gets a footer
   };
 
   const guard = (y: number, need: number): number => {
@@ -434,13 +451,13 @@ async function generatePDF(report: Report): Promise<void> {
   tc(FOREST);
   doc.text("Sonder", W / 2, 218, { align: "center" });
 
-  // Thin ornament: flanking lines with center cross-mark
+  // Ornament: flanking lines + center cross-mark
   lc(STONE_LIGHT);
   doc.setLineWidth(0.5);
   doc.line(W / 2 - 88, 248, W / 2 - 10, 248);
   doc.line(W / 2 + 10, 248, W / 2 + 88, 248);
-  doc.line(W / 2, 243, W / 2, 253);       // vertical tick
-  doc.line(W / 2 - 6, 248, W / 2 + 6, 248); // horizontal tick (over the rule gap)
+  doc.line(W / 2, 243, W / 2, 253);
+  doc.line(W / 2 - 6, 248, W / 2 + 6, 248);
 
   // Title
   doc.setFont("times", "bold");
@@ -460,17 +477,75 @@ async function generatePDF(report: Report): Promise<void> {
   tc(STONE_LIGHT);
   doc.text("You are sondering.", W / 2, H - 108, { align: "center" });
 
-  // Domain on cover (no page number)
+  // Domain on cover (no page number; addFooter is gated by pastCover)
   doc.setFont("times", "normal");
   doc.setFontSize(8);
   tc(STONE_LIGHT);
   doc.text("sonder-me.com", W / 2, H - 36, { align: "center" });
 
+  // ── INSIGHTS PAGE (page 2) ──────────────────────────────────────────────────
+
+  if (insights.length > 0) {
+    newPage();
+    let y = MT;
+
+    // Label
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7.5);
+    tc(FOREST);
+    doc.text("THREE TRUTHS FROM YOUR SONDER", ML, y, { charSpace: 1.2 });
+    y += 22;
+
+    // Cards
+    const CARD_PAD_X = 18;
+    const CARD_PAD_Y = 14;
+    const CARD_BODY_W = CW - CARD_PAD_X * 2;
+    const CARD_TITLE_FS = 7.5;
+    const CARD_BODY_FS = 10.5;
+    const CARD_BODY_LH = 14;
+
+    for (let ci = 0; ci < Math.min(insights.length, 3); ci++) {
+      const insight = insights[ci];
+
+      // Pre-calculate body wrap (helvetica normal) to size the card
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(CARD_BODY_FS);
+      const bodyLines = doc.splitTextToSize(insight.insight, CARD_BODY_W) as string[];
+      const cardH = CARD_PAD_Y + 9 + 8 + bodyLines.length * CARD_BODY_LH + CARD_PAD_Y;
+
+      y = guard(y, cardH + 8);
+
+      // Card background + border
+      fc(ci === 1 ? CARD_FILL_B : CARD_FILL_A);
+      lc(CARD_BORDER);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(ML, y, CW, cardH, 3, 3, "FD");
+
+      // Card title (small, uppercase, forest, slight tracking)
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(CARD_TITLE_FS);
+      tc(FOREST);
+      doc.text(insight.title.toUpperCase(), ML + CARD_PAD_X, y + CARD_PAD_Y + 9, { charSpace: 0.7 });
+
+      // Card body text
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(CARD_BODY_FS);
+      tc(BARK);
+      let textY = y + CARD_PAD_Y + 9 + 8 + CARD_BODY_LH;
+      for (const line of bodyLines) {
+        doc.text(line, ML + CARD_PAD_X, textY);
+        textY += CARD_BODY_LH;
+      }
+
+      y += cardH + 8;
+    }
+  }
+
   // ── SECTION PAGES ───────────────────────────────────────────────────────────
 
   for (let si = 0; si < report.sections.length; si++) {
     const section = report.sections[si];
-    newPage(); // adds footer to previous page, opens fresh page
+    newPage();
     let y = MT;
 
     // Section number (large, muted)
@@ -532,11 +607,27 @@ function DownloadButton({
 
 function FullReport({ report }: { report: Report }) {
   const [downloading, setDownloading] = useState(false);
+  const [insights, setInsights] = useState<PreviewInsight[]>([]);
+
+  // Load preview insights from localStorage (generated on the preview page)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("sonder_preview");
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (Array.isArray(data.previewInsights)) {
+          setInsights(data.previewInsights);
+        }
+      }
+    } catch {
+      // preview not available — graceful degradation
+    }
+  }, []);
 
   async function handleDownloadPDF() {
     setDownloading(true);
     try {
-      await generatePDF(report);
+      await generatePDF(report, insights);
     } catch (err) {
       console.error("PDF generation failed, falling back to print:", err);
       window.print();
@@ -583,8 +674,23 @@ function FullReport({ report }: { report: Report }) {
           <DownloadButton downloading={downloading} onDownload={handleDownloadPDF} />
         </div>
 
+        {/* Preview insights opener — shown if available from localStorage */}
+        {insights.length > 0 && (
+          <div className="mb-12">
+            <p className="text-xs font-medium text-forest tracking-widest uppercase mb-6">
+              Three Truths From Your Sonder
+            </p>
+            <div className="flex flex-col gap-4 mb-10">
+              {insights.map((insight, i) => (
+                <InsightCardReport key={i} insight={insight} index={i} />
+              ))}
+            </div>
+            <div className="h-px bg-stone-light/30" />
+          </div>
+        )}
+
         {/* Sections */}
-        <div>
+        <div className={insights.length > 0 ? "mt-12" : ""}>
           {report.sections.map((section, i) => (
             <div key={i}>
               <Section section={section} index={i} />
@@ -608,6 +714,28 @@ function FullReport({ report }: { report: Report }) {
           <DownloadButton downloading={downloading} onDownload={handleDownloadPDF} />
         </div>
       </main>
+    </div>
+  );
+}
+
+// ─── Insight Card (report page) ───────────────────────────────────────────────
+
+function InsightCardReport({
+  insight,
+  index,
+}: {
+  insight: PreviewInsight;
+  index: number;
+}) {
+  const accents = ["bg-forest/6", "bg-sage/10", "bg-forest/6"];
+  return (
+    <div className={`${accents[index]} border border-stone-light/30 rounded px-6 py-5`}>
+      <p className="text-xs font-semibold text-forest uppercase tracking-widest mb-2">
+        {insight.title}
+      </p>
+      <p className="text-bark text-sm sm:text-base leading-relaxed">
+        {insight.insight}
+      </p>
     </div>
   );
 }
