@@ -239,31 +239,291 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
   );
 }
 
+// ─── PDF Generation ───────────────────────────────────────────────────────────
+
+async function generatePDF(report: Report): Promise<void> {
+  const { jsPDF } = await import("jspdf");
+
+  // Page dimensions (letter, points)
+  const W = 612, H = 792;
+  const ML = 60, MR = 60;
+  const MT = 68, MB = 72;
+  const CW = W - ML - MR; // 492
+
+  const doc = new jsPDF({ unit: "pt", format: "letter" });
+
+  // ── Color palettes ──────────────────────────────────────────────────────────
+  type RGB = [number, number, number];
+  const FOREST:      RGB = [45,  71,  57 ];
+  const BARK:        RGB = [61,  43,  31 ];
+  const BARK_LIGHT:  RGB = [90,  68,  52 ];
+  const STONE:       RGB = [122, 112, 104];
+  const STONE_LIGHT: RGB = [175, 165, 155];
+  const NUM_COLOR:   RGB = [208, 200, 191];
+  const DIVIDER_C:   RGB = [215, 207, 198];
+
+  const tc = (c: RGB) => doc.setTextColor(c[0], c[1], c[2]);
+  const lc = (c: RGB) => doc.setDrawColor(c[0], c[1], c[2]);
+
+  // ── Rich text helpers ───────────────────────────────────────────────────────
+  type Seg = { text: string; bold: boolean };
+
+  const parseRich = (text: string): Seg[] =>
+    text.split(/(\*\*[^*]+\*\*)/g)
+      .map((p) => ({
+        text: p.startsWith("**") && p.endsWith("**") ? p.slice(2, -2) : p,
+        bold: p.startsWith("**") && p.endsWith("**"),
+      }))
+      .filter((s) => s.text.length > 0);
+
+  const wrapRich = (text: string, maxW: number, fs: number): Seg[][] => {
+    const tokens: Seg[] = [];
+    for (const seg of parseRich(text)) {
+      for (const part of seg.text.split(/(\s+)/)) {
+        if (part.length > 0) tokens.push({ text: part, bold: seg.bold });
+      }
+    }
+    const lines: Seg[][] = [];
+    let line: Seg[] = [], lineW = 0;
+    for (const tok of tokens) {
+      if (line.length === 0 && tok.text.trim() === "") continue;
+      doc.setFont("times", tok.bold ? "bold" : "normal");
+      doc.setFontSize(fs);
+      const tw = doc.getTextWidth(tok.text);
+      if (line.length > 0 && tok.text.trim() !== "" && lineW + tw > maxW) {
+        while (line.length > 0 && line[line.length - 1].text.trim() === "") line.pop();
+        lines.push(line);
+        line = []; lineW = 0;
+        if (tok.text.trim() === "") continue;
+      }
+      line.push(tok); lineW += tw;
+    }
+    while (line.length > 0 && line[line.length - 1].text.trim() === "") line.pop();
+    if (line.length > 0) lines.push(line);
+    return lines;
+  };
+
+  const drawRichLine = (
+    line: Seg[], x: number, y: number, fs: number,
+    nc: RGB, bc: RGB
+  ) => {
+    let cx = x;
+    for (const seg of line) {
+      doc.setFont("times", seg.bold ? "bold" : "normal");
+      doc.setFontSize(fs);
+      tc(seg.bold ? bc : nc);
+      doc.text(seg.text, cx, y);
+      cx += doc.getTextWidth(seg.text);
+    }
+    doc.setFont("times", "normal");
+  };
+
+  // ── Pagination ──────────────────────────────────────────────────────────────
+  let pageNum = 1;
+
+  const addFooter = () => {
+    doc.setFont("times", "normal");
+    doc.setFontSize(8);
+    tc(STONE_LIGHT);
+    doc.text(String(pageNum), W / 2, H - 30, { align: "center" });
+    doc.text("sonder-me.com", W - MR, H - 30, { align: "right" });
+  };
+
+  const newPage = () => {
+    addFooter();
+    doc.addPage();
+    pageNum++;
+  };
+
+  const guard = (y: number, need: number): number => {
+    if (y + need > H - MB) { newPage(); return MT; }
+    return y;
+  };
+
+  // ── Body paragraph renderer ─────────────────────────────────────────────────
+  const BODY_FS = 11;
+  const LINE_H  = 16;
+  const PARA_GAP = 10;
+
+  const renderBody = (content: string, startY: number): number => {
+    let y = startY;
+    for (const para of content.split(/\n+/).filter(Boolean)) {
+      const lines = wrapRich(para, CW, BODY_FS);
+      y = guard(y, lines.length * LINE_H + PARA_GAP);
+      for (const ln of lines) {
+        drawRichLine(ln, ML, y, BODY_FS, BARK_LIGHT, BARK);
+        y += LINE_H;
+      }
+      y += PARA_GAP;
+    }
+    return y;
+  };
+
+  // ── Section 9 outline renderer ──────────────────────────────────────────────
+  const S9_FS = 10.5;
+  const S9_LINE_H = 15;
+  const S9_GAP = 8;
+
+  const renderSection9 = (content: string, startY: number): number => {
+    let y = startY;
+    let firstHeader = true;
+
+    for (const line of content.split(/\n/).map((l) => l.trim()).filter(Boolean)) {
+
+      // Part header: **Books** / **Journal Prompts** / **Daily Practices**
+      if (/^\*\*[^*]+\*\*$/.test(line)) {
+        const extra = firstHeader ? 0 : 12;
+        y = guard(y, 36 + extra);
+        y += extra;
+        firstHeader = false;
+        doc.setFont("times", "bold");
+        doc.setFontSize(13);
+        tc(BARK);
+        doc.text(line.slice(2, -2), ML, y);
+        y += 22;
+        continue;
+      }
+
+      // Numbered journal prompt
+      if (/^\d+\./.test(line)) {
+        const num = line.match(/^(\d+)\.\s*/)?.[1] ?? "";
+        const body = line.replace(/^\d+\.\s*/, "");
+        const wrappedLines = wrapRich(body, CW - 22, S9_FS);
+        y = guard(y, wrappedLines.length * S9_LINE_H + S9_GAP);
+        doc.setFont("times", "bold");
+        doc.setFontSize(S9_FS);
+        tc(FOREST);
+        doc.text(`${num}.`, ML + 2, y);
+        for (const wl of wrappedLines) {
+          drawRichLine(wl, ML + 18, y, S9_FS, BARK_LIGHT, BARK);
+          y += S9_LINE_H;
+        }
+        y += S9_GAP;
+        continue;
+      }
+
+      // Book/practice item — starts with **Title** followed by more content
+      if (line.startsWith("**")) {
+        const wrappedLines = wrapRich(line, CW - 10, S9_FS);
+        y = guard(y, wrappedLines.length * S9_LINE_H + S9_GAP);
+        for (const wl of wrappedLines) {
+          drawRichLine(wl, ML + 8, y, S9_FS, BARK_LIGHT, BARK);
+          y += S9_LINE_H;
+        }
+        y += S9_GAP;
+        continue;
+      }
+
+      // Fallback: plain paragraph
+      const wrappedLines = wrapRich(line, CW, S9_FS);
+      y = guard(y, wrappedLines.length * S9_LINE_H + S9_GAP);
+      for (const wl of wrappedLines) {
+        drawRichLine(wl, ML, y, S9_FS, BARK_LIGHT, BARK);
+        y += S9_LINE_H;
+      }
+      y += S9_GAP;
+    }
+    return y;
+  };
+
+  // ── COVER PAGE ──────────────────────────────────────────────────────────────
+
+  // Wordmark
+  doc.setFont("times", "bold");
+  doc.setFontSize(44);
+  tc(FOREST);
+  doc.text("Sonder", W / 2, 218, { align: "center" });
+
+  // Thin ornament: flanking lines with center cross-mark
+  lc(STONE_LIGHT);
+  doc.setLineWidth(0.5);
+  doc.line(W / 2 - 88, 248, W / 2 - 10, 248);
+  doc.line(W / 2 + 10, 248, W / 2 + 88, 248);
+  doc.line(W / 2, 243, W / 2, 253);       // vertical tick
+  doc.line(W / 2 - 6, 248, W / 2 + 6, 248); // horizontal tick (over the rule gap)
+
+  // Title
+  doc.setFont("times", "bold");
+  doc.setFontSize(26);
+  tc(BARK);
+  doc.text("Your Sonder Report", W / 2, 298, { align: "center" });
+
+  // Date
+  doc.setFont("times", "normal");
+  doc.setFontSize(11);
+  tc(STONE);
+  doc.text(TODAY, W / 2, 322, { align: "center" });
+
+  // Tagline near bottom
+  doc.setFont("times", "italic");
+  doc.setFontSize(12);
+  tc(STONE_LIGHT);
+  doc.text("You are sondering.", W / 2, H - 108, { align: "center" });
+
+  // Domain on cover (no page number)
+  doc.setFont("times", "normal");
+  doc.setFontSize(8);
+  tc(STONE_LIGHT);
+  doc.text("sonder-me.com", W / 2, H - 36, { align: "center" });
+
+  // ── SECTION PAGES ───────────────────────────────────────────────────────────
+
+  for (let si = 0; si < report.sections.length; si++) {
+    const section = report.sections[si];
+    newPage(); // adds footer to previous page, opens fresh page
+    let y = MT;
+
+    // Section number (large, muted)
+    doc.setFont("times", "bold");
+    doc.setFontSize(52);
+    tc(NUM_COLOR);
+    doc.text(String(si + 1).padStart(2, "0"), ML, y + 44);
+    y += 56;
+
+    // Thin rule
+    lc(DIVIDER_C);
+    doc.setLineWidth(0.4);
+    doc.line(ML, y, ML + CW, y);
+    y += 16;
+
+    // Section title
+    doc.setFont("times", "bold");
+    doc.setFontSize(21);
+    tc(BARK);
+    const titleLines = doc.splitTextToSize(section.title, CW) as string[];
+    doc.text(titleLines, ML, y + 21);
+    y += titleLines.length * 25 + 12;
+
+    // Content
+    y = section.title === "Your Next 90 Days"
+      ? renderSection9(section.content, y)
+      : renderBody(section.content, y);
+  }
+
+  // Footer on last page
+  addFooter();
+
+  doc.save("Your-Sonder-Report.pdf");
+}
+
 // ─── Download Button ──────────────────────────────────────────────────────────
 
 function DownloadButton({
-  printing,
-  onPrint,
+  downloading,
+  onDownload,
 }: {
-  printing: boolean;
-  onPrint: () => void;
+  downloading: boolean;
+  onDownload: () => void;
 }) {
   return (
-    <div className="no-print flex flex-col items-center gap-2">
+    <div className="no-print">
       <button
         className="bg-forest text-parchment text-sm font-medium px-8 py-3 rounded-full hover:bg-forest-light transition-colors duration-200 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed"
-        onClick={onPrint}
-        disabled={printing}
+        onClick={onDownload}
+        disabled={downloading}
       >
-        {printing ? "Opening print dialog…" : "Download PDF"}
+        {downloading ? "Generating PDF…" : "Download PDF"}
       </button>
-      {printing && (
-        <p className="text-xs text-stone text-center max-w-xs leading-relaxed">
-          In the print dialog: set <strong className="text-bark">Destination</strong> to{" "}
-          <strong className="text-bark">Save as PDF</strong>, then uncheck{" "}
-          <strong className="text-bark">Headers and footers</strong> for the best result.
-        </p>
-      )}
     </div>
   );
 }
@@ -271,18 +531,18 @@ function DownloadButton({
 // ─── Full Report ──────────────────────────────────────────────────────────────
 
 function FullReport({ report }: { report: Report }) {
-  const [printing, setPrinting] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
-  function handlePrint() {
-    setPrinting(true);
-    setTimeout(() => {
-      const reset = () => {
-        setPrinting(false);
-        window.removeEventListener("afterprint", reset);
-      };
-      window.addEventListener("afterprint", reset);
+  async function handleDownloadPDF() {
+    setDownloading(true);
+    try {
+      await generatePDF(report);
+    } catch (err) {
+      console.error("PDF generation failed, falling back to print:", err);
       window.print();
-    }, 800);
+    } finally {
+      setDownloading(false);
+    }
   }
 
   return (
@@ -320,7 +580,7 @@ function FullReport({ report }: { report: Report }) {
             Sonder is a self-reflection tool based on validated psychological research frameworks. It is not a clinical assessment, therapy, or substitute for professional mental health care. If you are experiencing a mental health crisis, please contact the 988 Suicide and Crisis Lifeline by calling or texting 988.
           </p>
 
-          <DownloadButton printing={printing} onPrint={handlePrint} />
+          <DownloadButton downloading={downloading} onDownload={handleDownloadPDF} />
         </div>
 
         {/* Sections */}
@@ -345,7 +605,7 @@ function FullReport({ report }: { report: Report }) {
 
         {/* Bottom download button — hidden in print */}
         <div className="mt-10 flex justify-center">
-          <DownloadButton printing={printing} onPrint={handlePrint} />
+          <DownloadButton downloading={downloading} onDownload={handleDownloadPDF} />
         </div>
       </main>
     </div>
@@ -388,14 +648,75 @@ function Section({ section, index }: { section: ReportSection; index: number }) 
         >
           {section.title}
         </h2>
-        <div className="flex flex-col gap-4">
-          {section.content.split(/\n+/).filter(Boolean).map((para, i) => (
-            <p key={i} className="print-para text-bark-light leading-relaxed text-base sm:text-[1.0625rem]">
-              {renderInlineBold(para)}
-            </p>
-          ))}
-        </div>
+        {section.title === "Your Next 90 Days"
+          ? <Section9Content content={section.content} />
+          : (
+            <div className="flex flex-col gap-4">
+              {section.content.split(/\n+/).filter(Boolean).map((para, i) => (
+                <p key={i} className="print-para text-bark-light leading-relaxed text-base sm:text-[1.0625rem]">
+                  {renderInlineBold(para)}
+                </p>
+              ))}
+            </div>
+          )}
       </div>
     </>
+  );
+}
+
+// ─── Section 9 outline renderer ───────────────────────────────────────────────
+
+function Section9Content({ content }: { content: string }) {
+  const lines = content.split(/\n/).map((l) => l.trim()).filter(Boolean);
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      {lines.map((line, i) => {
+        // Part header: line is *only* **Text** — nothing before or after the bold markers
+        if (/^\*\*[^*]+\*\*$/.test(line)) {
+          return (
+            <p
+              key={i}
+              className="font-serif font-semibold text-bark text-base sm:text-lg mt-6 mb-1 first:mt-0"
+              style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}
+            >
+              {line.slice(2, -2)}
+            </p>
+          );
+        }
+
+        // Numbered journal prompt: starts with 1. / 2. / 3.
+        if (/^\d+\./.test(line)) {
+          const num = line.match(/^(\d+)\.\s*/)?.[1] ?? "";
+          const body = line.replace(/^\d+\.\s*/, "");
+          return (
+            <div key={i} className="flex gap-3 pl-2">
+              <span className="text-forest font-semibold text-sm mt-0.5 shrink-0 w-4">{num}.</span>
+              <p className="print-para text-bark-light leading-relaxed text-sm sm:text-base">
+                {renderInlineBold(body)}
+              </p>
+            </div>
+          );
+        }
+
+        // Book or practice item: line starts with **Title** followed by more content
+        if (line.startsWith("**")) {
+          return (
+            <div key={i} className="pl-2">
+              <p className="print-para text-bark-light leading-relaxed text-sm sm:text-base">
+                {renderInlineBold(line)}
+              </p>
+            </div>
+          );
+        }
+
+        // Fallback: plain paragraph
+        return (
+          <p key={i} className="print-para text-bark-light leading-relaxed text-sm sm:text-base">
+            {renderInlineBold(line)}
+          </p>
+        );
+      })}
+    </div>
   );
 }
