@@ -38,116 +38,130 @@ The three cards together should make the person feel simultaneously seen, slight
 Return ONLY a JSON object with this exact structure, no other text:
 {"previewInsights": [{"title": "...", "insight": "..."}, {"title": "...", "insight": "..."}, {"title": "...", "insight": "..."}]}`;
 
+// Max attempts before surfacing an error to the client.
+// Parse failures are intermittent — a second call almost always succeeds.
+const MAX_ATTEMPTS = 2;
+
 export async function POST(request: NextRequest) {
+  let body: { scores?: unknown; context?: unknown };
   try {
-    const body = await request.json();
-    const { scores, context } = body;
+    body = await request.json();
+  } catch {
+    return Response.json({ error: "Invalid request body" }, { status: 400 });
+  }
 
-    if (!scores) {
-      return Response.json({ error: "Missing scores" }, { status: 400 });
+  const { scores, context } = body;
+  if (!scores) {
+    return Response.json({ error: "Missing scores" }, { status: 400 });
+  }
+
+  const userContent = context
+    ? JSON.stringify({ scores, context })
+    : JSON.stringify({ scores });
+
+  let lastErrorMessage = "Something went wrong. Please try again.";
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    // ── Claude API call ──────────────────────────────────────────────────────
+    let message: Awaited<ReturnType<typeof client.messages.stream.prototype.finalMessage>>;
+    try {
+      const stream = client.messages.stream({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 2000,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content: userContent }],
+      });
+      message = await stream.finalMessage();
+    } catch (error) {
+      // API-level errors (auth, rate limit, billing) are not retry-able
+      console.error(`[generate-preview] API error on attempt ${attempt}:`, error);
+      if (error instanceof Anthropic.APIError) {
+        if (error.status === 402) {
+          return Response.json(
+            { error: "API credit balance is too low. Please add credits and try again." },
+            { status: 402 }
+          );
+        }
+        if (error.status === 429) {
+          return Response.json(
+            { error: "We are temporarily rate limited. Please wait 30 seconds and try again." },
+            { status: 429 }
+          );
+        }
+        if (error.status >= 500) {
+          return Response.json(
+            { error: "Our AI is briefly unavailable. Please try again in a moment." },
+            { status: 503 }
+          );
+        }
+      }
+      return Response.json(
+        { error: "Something went wrong. Please try again." },
+        { status: 500 }
+      );
     }
 
-    const userContent = context
-      ? JSON.stringify({ scores, context })
-      : JSON.stringify({ scores });
-
-    const stream = client.messages.stream({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 2000,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: userContent }],
-    });
-
-    const message = await stream.finalMessage();
-
+    // ── Truncation check ─────────────────────────────────────────────────────
     if (message.stop_reason === "max_tokens") {
-      console.error("Preview generation hit max_tokens limit — response was truncated");
-      return Response.json(
-        { error: "Preview was cut short — please try again" },
-        { status: 500 }
-      );
+      console.warn(`[generate-preview] attempt ${attempt}: response truncated (max_tokens)`);
+      lastErrorMessage = "Preview was cut short — please try again";
+      continue; // retry — a shorter response may fit
     }
 
-    const textBlock = message.content.find((b) => b.type === "text");
+    // ── Extract text block ───────────────────────────────────────────────────
+    const textBlock = message.content.find((b: { type: string }) => b.type === "text");
     if (!textBlock || textBlock.type !== "text") {
-      return Response.json(
-        { error: "No text content in response" },
-        { status: 500 }
-      );
+      console.warn(`[generate-preview] attempt ${attempt}: no text block in response`);
+      lastErrorMessage = "No text content in response — please try again";
+      continue;
     }
 
-    // Always log the raw response in dev so failures are immediately diagnosable
     const text = textBlock.text;
     if (process.env.NODE_ENV !== "production") {
-      console.log("[generate-preview] raw response:", text.slice(0, 500));
+      console.log(`[generate-preview] attempt ${attempt} raw (first 500):`, text.slice(0, 500));
     }
 
-    // Extract the JSON object by finding our expected root key, walking back to the
-    // opening { and forward counting brace depth to the matching }.
-    // This is immune to preamble text (with or without {}), trailing notes, and fences.
+    // ── JSON extraction ──────────────────────────────────────────────────────
     const raw = extractJSONObject(text, "previewInsights");
 
     if (!raw) {
-      console.error("[generate-preview] No JSON object found. Full response:", text);
-      return Response.json(
-        { error: "Failed to parse preview response — please try again" },
-        { status: 500 }
-      );
+      console.warn(`[generate-preview] attempt ${attempt}: no JSON found. Full response:`, text);
+      lastErrorMessage = "Failed to parse preview response — please try again";
+      continue;
     }
 
+    // ── Parse + validate ─────────────────────────────────────────────────────
     try {
       const parsed = JSON.parse(raw);
 
       if (!Array.isArray(parsed.previewInsights) || parsed.previewInsights.length !== 3) {
-        console.error(
-          "Preview structure invalid — previewInsights:",
-          parsed.previewInsights?.length ?? "missing",
-          "Raw:",
-          raw.slice(0, 300)
+        console.warn(
+          `[generate-preview] attempt ${attempt}: invalid structure — previewInsights:`,
+          parsed.previewInsights?.length ?? "missing"
         );
-        return Response.json(
-          { error: "Preview format error — please try again" },
-          { status: 500 }
-        );
+        lastErrorMessage = "Preview format error — please try again";
+        continue;
       }
 
+      if (attempt > 1) {
+        console.log(`[generate-preview] succeeded on attempt ${attempt}`);
+      }
       return Response.json(parsed);
     } catch (parseErr) {
-      console.error("[generate-preview] JSON parse failed. Error:", parseErr, "\nRaw:", raw.slice(0, 1000));
-      return Response.json(
-        { error: "Failed to parse preview response — please try again" },
-        { status: 500 }
+      console.warn(
+        `[generate-preview] attempt ${attempt}: JSON.parse failed:`,
+        parseErr,
+        "\nRaw slice:",
+        raw.slice(0, 500)
       );
+      lastErrorMessage = "Failed to parse preview response — please try again";
+      continue;
     }
-  } catch (error) {
-    console.error("[generate-preview] error:", error);
-
-    if (error instanceof Anthropic.APIError) {
-      if (error.status === 402) {
-        return Response.json(
-          { error: "API credit balance is too low. Please add credits and try again." },
-          { status: 402 }
-        );
-      }
-      if (error.status === 429) {
-        return Response.json(
-          { error: "We are temporarily rate limited. Please wait 30 seconds and try again." },
-          { status: 429 }
-        );
-      }
-      if (error.status >= 500) {
-        return Response.json(
-          { error: "Our AI is briefly unavailable. Please try again in a moment." },
-          { status: 503 }
-        );
-      }
-    }
-
-    return Response.json(
-      { error: "Something went wrong. Please try again." },
-      { status: 500 }
-    );
   }
+
+  // All attempts exhausted
+  console.error(`[generate-preview] all ${MAX_ATTEMPTS} attempts failed. Last error: ${lastErrorMessage}`);
+  return Response.json({ error: lastErrorMessage }, { status: 500 });
 }
 
 /**
