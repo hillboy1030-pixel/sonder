@@ -228,7 +228,7 @@ function LoadingState({ message }: { message: string }) {
       </p>
 
       <p className="mt-8 text-xs text-stone-light text-center">
-        A moment while we look closely.
+        Patterns surface slowly. This is by design.
       </p>
     </div>
   );

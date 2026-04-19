@@ -235,7 +235,7 @@ function LoadingState({ message }: { message: string }) {
       </p>
 
       <p className="mt-8 text-xs text-stone-light text-center">
-        This usually takes 60 to 90 seconds. Take a breath.
+        Sixty to ninety seconds. Some things cannot be rushed.
       </p>
     </div>
   );
