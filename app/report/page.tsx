@@ -171,6 +171,42 @@ function ReportPageInner() {
   return <FullReport report={report} />;
 }
 
+// ─── Progress Ring ────────────────────────────────────────────────────────────
+
+function ProgressRing({ duration }: { duration: number }) {
+  const C = 150.8; // circumference of r=24 circle (2π×24)
+  const [offset, setOffset] = useState(C);
+
+  useEffect(() => {
+    const startTime = Date.now();
+    const totalMs = duration * 1000;
+    const id = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / totalMs, 1);
+      setOffset(C * (1 - progress));
+      if (progress >= 1) clearInterval(id);
+    }, 50);
+    return () => clearInterval(id);
+  }, [duration]);
+
+  return (
+    <svg width="60" height="60" viewBox="0 0 60 60" fill="none" aria-hidden="true">
+      {/* Ghost track */}
+      <circle cx="30" cy="30" r="24" stroke="#3D5A3E" strokeWidth="2" strokeOpacity="0.12" />
+      {/* Filling arc — starts at 12 o'clock */}
+      <circle
+        cx="30" cy="30" r="24"
+        stroke="#3D5A3E"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeDasharray={C}
+        strokeDashoffset={offset}
+        transform="rotate(-90 30 30)"
+      />
+    </svg>
+  );
+}
+
 // ─── Loading Screen ───────────────────────────────────────────────────────────
 
 function LoadingState({ message }: { message: string }) {
@@ -181,21 +217,7 @@ function LoadingState({ message }: { message: string }) {
       </span>
 
       {/* Circular progress ring — fills over 120 seconds */}
-      <svg width="60" height="60" viewBox="0 0 60 60" fill="none" aria-hidden="true">
-        {/* Track */}
-        <circle cx="30" cy="30" r="24" stroke="#3D5A3E" strokeWidth="2" strokeOpacity="0.12" />
-        {/* Arc */}
-        <circle
-          cx="30" cy="30" r="24"
-          stroke="#3D5A3E"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeDasharray="150.8"
-          strokeDashoffset="150.8"
-          transform="rotate(-90 30 30)"
-          style={{ animation: "ringFill 120s linear forwards" }}
-        />
-      </svg>
+      <ProgressRing duration={120} />
 
       {/* Sequential message — key swap triggers fade-up re-animation */}
       <p
