@@ -199,7 +199,7 @@ export default function HomePage() {
               animationFillMode: "both",
             }}
           >
-            Sonder is a self-understanding tool built on four validated psychological frameworks — the Big Five, the Holland Code, attachment theory, and the VIA strengths inventory. Answer 72 honest questions, receive three free insight cards, and unlock a nine-section written portrait of how you think, work, love, and grow. One-time, $5. Your data never leaves your browser.
+            Sonder is a self-understanding tool built on four validated psychological frameworks — the Big Five, the Holland Code, attachment theory, and the VIA strengths inventory. Answer 72 honest questions, receive three free insight cards, and unlock a nine-section written portrait of how you think, work, love, and grow. Your data never leaves your browser.
           </p>
 
           {/* CTA button */}
