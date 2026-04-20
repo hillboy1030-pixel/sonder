@@ -85,6 +85,9 @@ export default function HomePage() {
             right: 0,
             padding: "28px 40px",
             zIndex: 20,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
           }}
         >
           {/* Wordmark — left */}
@@ -100,7 +103,14 @@ export default function HomePage() {
             Sonder
           </span>
 
-          {/* Nav links — centered absolutely, hidden on mobile where they'd overlap the wordmark */}
+          {/* Nav links — right-aligned on mobile, absolutely centered on sm+ */}
+          <div
+            className="flex sm:hidden"
+            style={{ gap: "10px" }}
+          >
+            <NavLink href="/about">About</NavLink>
+            <NavLink href="/journal">The Journal</NavLink>
+          </div>
           <div
             className="hidden sm:flex"
             style={{
