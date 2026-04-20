@@ -144,7 +144,7 @@ export default function AssessmentPage() {
           <a href="/" className="font-serif text-xl font-bold text-forest hover:opacity-70 transition-opacity">Sonder</a>
         </header>
         <main className="flex-1 max-w-2xl w-full mx-auto px-6 sm:px-8 py-10 pb-20">
-          <IntakeScreen2 context={context} onChange={setContext} onContinue={handleScreen2Continue} />
+          <IntakeScreen2 context={context} onChange={setContext} onContinue={handleScreen2Continue} onBack={() => setIntakeStep("screen1")} />
         </main>
         {/* TODO: remove before public launch */}
         <button onClick={handleDevFill} className="fixed bottom-4 left-4 z-50 bg-bark text-parchment text-xs font-medium px-3 py-2 rounded opacity-70 hover:opacity-100 transition-opacity">
@@ -428,15 +428,23 @@ function IntakeScreen2({
   context,
   onChange,
   onContinue,
+  onBack,
 }: {
   context: SonderContext;
   onChange: (c: SonderContext) => void;
   onContinue: () => void;
+  onBack: () => void;
 }) {
   const canContinue = context.worstSelf !== "";
 
   return (
     <div>
+      <button
+        onClick={onBack}
+        className="text-xs text-stone hover:text-bark transition-colors mb-8 flex items-center gap-1"
+      >
+        ← Back
+      </button>
       <div className="mb-10">
         <p className="text-xs font-medium text-forest tracking-widest uppercase mb-1">
           Going inward
@@ -582,7 +590,7 @@ function IntakeRadioGroup({
               onClick={() => onChange(opt)}
               className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-150 select-none ${
                 selected
-                  ? "bg-forest text-parchment shadow-sm"
+                  ? "bg-sage/25 text-forest border border-sage/40 shadow-sm"
                   : "bg-transparent border border-stone-light/60 text-bark-light hover:border-forest/50 hover:text-forest"
               }`}
             >
