@@ -753,6 +753,20 @@ function FullReport({ report }: { report: Report }) {
           You are sondering.
         </p>
 
+        {/* Quiet share prompt — hidden in print */}
+        <p
+          className="no-print mt-5 text-center"
+          style={{
+            fontFamily: "var(--font-playfair), Georgia, serif",
+            fontStyle: "italic",
+            fontSize: "13px",
+            color: "#B8B2A8",
+            lineHeight: 1.6,
+          }}
+        >
+          If this helped you, it might help one person you know. Share quietly.
+        </p>
+
         {/* Bottom download button — hidden in print */}
         <div className="mt-10 flex justify-center">
           <DownloadButton downloading={downloading} onDownload={handleDownloadPDF} />

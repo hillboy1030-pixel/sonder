@@ -76,7 +76,7 @@ export default function HomePage() {
           }}
         />
 
-        {/* Wordmark */}
+        {/* Nav */}
         <div
           style={{
             position: "absolute",
@@ -84,9 +84,10 @@ export default function HomePage() {
             left: 0,
             right: 0,
             padding: "28px 40px",
-            zIndex: 10,
+            zIndex: 20,
           }}
         >
+          {/* Wordmark — left */}
           <span
             style={{
               fontFamily: "var(--font-playfair), Georgia, serif",
@@ -98,6 +99,21 @@ export default function HomePage() {
           >
             Sonder
           </span>
+
+          {/* Nav links — centered absolutely so they sit in the middle of the full bar */}
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              display: "flex",
+              gap: "16px",
+            }}
+          >
+            <NavLink href="/about">About</NavLink>
+            <NavLink href="/journal">The Journal</NavLink>
+          </div>
         </div>
 
         {/* Hero content */}
@@ -206,6 +222,7 @@ export default function HomePage() {
           >
             Understand yourself better. Sonder more deeply.
           </p>
+
         </div>
 
         {/* Scroll indicator — thin vertical line */}
@@ -400,13 +417,13 @@ function HeroButton() {
       onMouseLeave={() => setHovered(false)}
       style={{
         display: "inline-block",
-        padding: "16px 44px",
+        padding: "18px 56px",
         borderRadius: "9999px",
         background: hovered ? "rgba(255,255,255,0.96)" : "rgba(255,255,255,0.16)",
         border: "1.5px solid rgba(255,255,255,0.65)",
         color: hovered ? "#3D5A3E" : "white",
         fontWeight: 600,
-        fontSize: "15px",
+        fontSize: "17px",
         letterSpacing: "0.04em",
         textDecoration: "none",
         backdropFilter: "blur(10px)",
@@ -418,8 +435,42 @@ function HeroButton() {
           : "0 2px 12px rgba(0,0,0,0.12)",
       }}
     >
-      Step Across the Threshold
+      Begin
     </Link>
+  );
+}
+
+// ─── Nav link — same frosted pill aesthetic as HeroButton, smaller ────────────
+
+function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <a
+      href={href}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: "inline-block",
+        padding: "10px 24px",
+        borderRadius: "9999px",
+        background: hovered ? "rgba(255,255,255,0.96)" : "rgba(255,255,255,0.16)",
+        border: "1.5px solid rgba(255,255,255,0.65)",
+        color: hovered ? "#3D5A3E" : "white",
+        fontWeight: 600,
+        fontSize: "13px",
+        letterSpacing: "0.04em",
+        textDecoration: "none",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+        transform: hovered ? "translateY(-2px)" : "translateY(0)",
+        transition: "background 0.22s, color 0.22s, transform 0.22s",
+        boxShadow: hovered
+          ? "0 8px 30px rgba(0,0,0,0.18)"
+          : "0 2px 12px rgba(0,0,0,0.12)",
+      }}
+    >
+      {children}
+    </a>
   );
 }
 

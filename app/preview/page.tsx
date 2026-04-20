@@ -44,6 +44,8 @@ export default function PreviewPage() {
   const [retryCount, setRetryCount] = useState(0);
   // Prevents the background report fetch from firing more than once per session
   const backgroundStarted = useRef(false);
+  // Prevents a second concurrent preview fetch if router ref changes and re-runs the effect
+  const previewFetchStarted = useRef(false);
 
   // Rotate loading messages while waiting for preview
   useEffect(() => {
@@ -57,6 +59,13 @@ export default function PreviewPage() {
 
   // Fetch preview — runs on mount and on retry
   useEffect(() => {
+    // On retry: reset the guard so a fresh fetch is allowed
+    if (retryCount > 0) previewFetchStarted.current = false;
+
+    // Guard: prevent a second concurrent fetch if router ref changes and re-runs this effect
+    if (previewFetchStarted.current) return;
+    previewFetchStarted.current = true;
+
     // Always parse scores first — needed both for cache-hit path and fresh fetch
     const rawScores = localStorage.getItem("sonder_scores");
     if (!rawScores) {
@@ -141,6 +150,8 @@ export default function PreviewPage() {
         startBackgroundReport();
       })
       .catch((err: Error) => {
+        // Reset guard so the user can retry
+        previewFetchStarted.current = false;
         const msg = err?.message ?? "";
         if (!msg || msg.toLowerCase().includes("fetch") || msg.toLowerCase().includes("network")) {
           setError("We couldn't reach our server. Check your connection and try again.");
@@ -154,6 +165,7 @@ export default function PreviewPage() {
     setError(null);
     setPreview(null);
     backgroundStarted.current = false; // allow background to restart on retry
+    previewFetchStarted.current = false; // allow preview fetch to restart on retry
     localStorage.removeItem("sonder_report");
     localStorage.removeItem("sonder_report_failed");
     setRetryCount((c) => c + 1);
@@ -352,6 +364,20 @@ function ReportPreview({ previewInsights }: { previewInsights: PreviewInsight[] 
           ))}
         </div>
 
+        {/* Quiet share prompt */}
+        <p
+          className="text-center mb-8"
+          style={{
+            fontFamily: "var(--font-playfair), Georgia, serif",
+            fontStyle: "italic",
+            fontSize: "13px",
+            color: "#8A8278",
+            lineHeight: 1.6,
+          }}
+        >
+          If Sonder helped you, share it with one person who would understand. This works better quietly.
+        </p>
+
         {/* Share button */}
         <div className="flex flex-col items-center gap-1.5 mb-12">
           <button
@@ -366,7 +392,7 @@ function ReportPreview({ previewInsights }: { previewInsights: PreviewInsight[] 
           >
             {shareLoading ? "Generating image…" : "Share Your Sonder"}
           </button>
-          <p className="text-xs text-stone">Share your free insights — no payment needed</p>
+          <p className="text-xs text-stone">Share with one thoughtful person. This works better quietly than loudly.</p>
         </div>
 
         {/* Locked sections */}
