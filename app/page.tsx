@@ -100,14 +100,14 @@ export default function HomePage() {
             Sonder
           </span>
 
-          {/* Nav links — centered absolutely so they sit in the middle of the full bar */}
+          {/* Nav links — centered absolutely, hidden on mobile where they'd overlap the wordmark */}
           <div
+            className="hidden sm:flex"
             style={{
               position: "absolute",
               top: "50%",
               left: "50%",
               transform: "translate(-50%, -50%)",
-              display: "flex",
               gap: "16px",
             }}
           >
