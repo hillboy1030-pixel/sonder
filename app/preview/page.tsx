@@ -35,15 +35,15 @@ const BLUR_PLACEHOLDER =
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+// Parallel background generation removed — re-enable when upgraded to Vercel Pro (maxDuration 300 already set on the report route)
+
 export default function PreviewPage() {
   const router = useRouter();
   const [preview, setPreview] = useState<PreviewData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [msgIndex, setMsgIndex] = useState(0);
-  // Incrementing triggers a re-fetch of the preview (and restarts background report)
+  // Incrementing triggers a re-fetch of the preview
   const [retryCount, setRetryCount] = useState(0);
-  // Prevents the background report fetch from firing more than once per session
-  const backgroundStarted = useRef(false);
   // Prevents a second concurrent preview fetch if router ref changes and re-runs the effect
   const previewFetchStarted = useRef(false);
 
@@ -89,40 +89,12 @@ export default function PreviewPage() {
       // context is optional
     }
 
-    // Fire the background report fetch (sections only) — does not block the UI
-    function startBackgroundReport() {
-      if (backgroundStarted.current) return;
-      backgroundStarted.current = true;
-      fetch("/api/generate-report", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scores, context }),
-      })
-        .then(async (res) => {
-          const data = await res.json().catch(() => ({ error: undefined }));
-          if (!res.ok) throw new Error(data?.error ?? "Report failed");
-          return data;
-        })
-        .then((data) => {
-          localStorage.setItem("sonder_report", JSON.stringify(data));
-          localStorage.removeItem("sonder_report_failed");
-        })
-        .catch(() => {
-          // Silent failure — report page will detect the flag and regenerate
-          localStorage.setItem("sonder_report_failed", "true");
-        });
-    }
-
     // On first load: use cached preview if available
     if (retryCount === 0) {
       const cached = localStorage.getItem("sonder_preview");
       if (cached) {
         try {
           setPreview(JSON.parse(cached));
-          // Still kick off background report if it hasn't been generated yet
-          if (!localStorage.getItem("sonder_report")) {
-            startBackgroundReport();
-          }
           return;
         } catch {
           // cache corrupt — fall through to regenerate
@@ -146,8 +118,6 @@ export default function PreviewPage() {
       .then((data) => {
         localStorage.setItem("sonder_preview", JSON.stringify(data));
         setPreview(data);
-        // Preview is showing — start the full report in the background immediately
-        startBackgroundReport();
       })
       .catch((err: Error) => {
         // Reset guard so the user can retry
@@ -164,10 +134,7 @@ export default function PreviewPage() {
   function handleRetry() {
     setError(null);
     setPreview(null);
-    backgroundStarted.current = false; // allow background to restart on retry
     previewFetchStarted.current = false; // allow preview fetch to restart on retry
-    localStorage.removeItem("sonder_report");
-    localStorage.removeItem("sonder_report_failed");
     setRetryCount((c) => c + 1);
   }
 
@@ -221,8 +188,8 @@ function LoadingState({ message }: { message: string }) {
         Sonder
       </span>
 
-      {/* Circular progress ring — fills over 10 seconds */}
-      <ProgressRing duration={10} />
+      {/* Circular progress ring — fills over 30 seconds */}
+      <ProgressRing duration={30} />
 
       {/* Sequential message — key swap triggers fade-up re-animation */}
       <p
@@ -406,6 +373,20 @@ function ReportPreview({ previewInsights }: { previewInsights: PreviewInsight[] 
             ))}
           </div>
         </div>
+
+        {/* Expectation note — sits quietly above the CTA */}
+        <p
+          className="text-center mb-5"
+          style={{
+            fontFamily: "var(--font-playfair), Georgia, serif",
+            fontStyle: "italic",
+            fontSize: "13px",
+            color: "#B8B2A8",
+            lineHeight: 1.6,
+          }}
+        >
+          Your full report takes a few minutes to write. We don&rsquo;t rush this part.
+        </p>
 
         {/* CTA */}
         <div className="flex flex-col items-center text-center gap-3 pt-4">

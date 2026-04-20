@@ -55,9 +55,11 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Missing scores" }, { status: 400 });
   }
 
-  const userContent = context
+  const dataPayload = context
     ? JSON.stringify({ scores, context })
     : JSON.stringify({ scores });
+
+  const userContent = `${dataPayload}\n\nRespond with valid JSON only. Do not wrap the response in markdown code fences. Do not include any preamble, explanation, or trailing commentary. Your entire response must be a single parseable JSON object and nothing else.`;
 
   let lastErrorMessage = "Something went wrong. Please try again.";
 
@@ -166,15 +168,18 @@ export async function POST(request: NextRequest) {
 
 /**
  * Extracts the first complete JSON object containing `rootKey` from arbitrary text.
- * Handles preamble text, markdown fences, and trailing notes robustly.
- * Uses key-based search + brace depth counting — immune to { } in surrounding text.
+ * Three strategies in order of precision:
+ *   1. Fast path — text is already clean JSON
+ *   2. Key-based — find rootKey, walk back to opening {, count brace depth to closing }
+ *   3. Fence strip — strip markdown fences, return remainder if it starts with {
+ *   4. Brute-force — slice from first { to last }, attempt parse
  */
 function extractJSONObject(text: string, rootKey: string): string | null {
-  // Fast path: text is already clean JSON
+  // Strategy 1: text is already clean JSON
   const trimmed = text.trim();
   if (trimmed.startsWith("{")) return trimmed;
 
-  // Find the root key, walk backward to the opening {, then count brace depth forward
+  // Strategy 2: find root key, walk back to opening {, brace-count forward
   const keyIdx = text.indexOf(`"${rootKey}"`);
   if (keyIdx !== -1) {
     for (let i = keyIdx - 1; i >= 0; i--) {
@@ -187,14 +192,21 @@ function extractJSONObject(text: string, rootKey: string): string | null {
             if (depth === 0) return text.slice(i, j + 1);
           }
         }
-        break; // unbalanced braces — fall through to next strategy
+        break; // unbalanced — fall through
       }
     }
   }
 
-  // Fallback: strip markdown fences and return the remainder
+  // Strategy 3: strip markdown fences
   const stripped = trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
   if (stripped.startsWith("{")) return stripped;
+
+  // Strategy 4: brute-force — first { to last }
+  const firstBrace = text.indexOf("{");
+  const lastBrace = text.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    return text.slice(firstBrace, lastBrace + 1);
+  }
 
   return null;
 }

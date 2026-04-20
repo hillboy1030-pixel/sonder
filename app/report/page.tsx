@@ -21,7 +21,9 @@ const LOADING_MESSAGES = [
   "Translating your inner world...",
   "Writing the truths others haven't told you...",
   "Shaping your next 90 days...",
-  "Almost there. This is worth waiting for.",
+  "Asking what would serve you...",
+  "Almost there. This is worth waiting for...",
+  "Breathing alongside your words...",
 ];
 
 const TODAY = new Date().toLocaleDateString("en-US", {
@@ -31,6 +33,8 @@ const TODAY = new Date().toLocaleDateString("en-US", {
 });
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
+
+// Parallel background generation removed — re-enable when upgraded to Vercel Pro (maxDuration 300 already set on the report route)
 
 export default function ReportPage() {
   return (
@@ -55,7 +59,7 @@ function ReportPageInner() {
     if (report || error || paymentError) return;
     const interval = setInterval(
       () => setMsgIndex((i) => Math.min(i + 1, LOADING_MESSAGES.length - 1)),
-      11000
+      18000
     );
     return () => clearInterval(interval);
   }, [report, error, paymentError]);
@@ -93,10 +97,9 @@ function ReportPageInner() {
         }
       }
 
-      // Use cached report if present and background generation didn't fail
-      const failed = localStorage.getItem("sonder_report_failed") === "true";
+      // Use cached report if present (set by a previous full view in the same browser)
       const cachedJson = localStorage.getItem("sonder_report");
-      if (cachedJson && !failed) {
+      if (cachedJson) {
         try {
           setReport(JSON.parse(cachedJson));
           return;
@@ -104,9 +107,6 @@ function ReportPageInner() {
           // cache corrupt — fall through to regenerate
         }
       }
-
-      // Clear failed flag and regenerate fresh
-      localStorage.removeItem("sonder_report_failed");
 
       const rawScores = localStorage.getItem("sonder_scores");
       if (!rawScores) {
@@ -216,8 +216,8 @@ function LoadingState({ message }: { message: string }) {
         Sonder
       </span>
 
-      {/* Circular progress ring — fills over 120 seconds */}
-      <ProgressRing duration={120} />
+      {/* Circular progress ring — fills over 180 seconds */}
+      <ProgressRing duration={180} />
 
       {/* Sequential message — key swap triggers fade-up re-animation */}
       <p
@@ -235,7 +235,7 @@ function LoadingState({ message }: { message: string }) {
       </p>
 
       <p className="mt-8 text-xs text-stone-light text-center">
-        Sixty to ninety seconds. Some things cannot be rushed.
+        We don&rsquo;t rush this part. Your report takes a few minutes to complete.
       </p>
     </div>
   );

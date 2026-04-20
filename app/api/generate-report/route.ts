@@ -65,6 +65,7 @@ RULES FOR ALL SECTIONS:
 - Use hyper-specific life moments to illustrate abstract patterns. Not "you tend to overcommit" but "you are the person who says yes to the school fundraiser on the same week you promised your spouse a quieter month, and you genuinely meant both yeses when you said them." Ground every insight in a moment someone could recognize from their own Tuesday afternoon
 - Every section must contain at least one observation that makes the reader feel slightly exposed — something true that they have never seen written down before
 - Write with subtext. The most powerful sentences say one thing and mean three. Aim for the kind of prose that makes someone stop mid-paragraph and stare at the wall for a moment
+- Every section must give genuine depth and celebration to the gifts of this profile, not just the shadows. Shadow work is only half the job. The reader should finish each section feeling simultaneously seen in their patterns AND honored for the beauty of who they are. When you name a gift, take the time to describe it with the same specificity and weight you give to costs. The report is not a list of things to fix — it is a mirror held with love.
 - Minimum 150 words per section
 - Never use: journey, authentic, unique, resonate, empower, leverage, transformative, tapestry, navigate
 - No hedging — speak in patterns not maybes
@@ -72,6 +73,8 @@ RULES FOR ALL SECTIONS:
 - No bullet points inside sections — prose only
 - The goal of this report is not to make someone feel good about themselves. It is to make them feel accurately seen. Those are different things. Feeling accurately seen is more valuable and more rare.
 - The arc of the full report follows the therapeutic arc: Sections 1-4 are Observation, Section 5 is Challenge, Sections 6-7 are Application, Section 8 is Integration. Each section should feel like it earns the next one. By the time the reader reaches Section 8 they should feel that everything before it was leading here.
+
+The central paradox you name is not a problem to be solved. It is a koan to be lived. The final image that closes Section 8 should include something sacred — not religious, just reverent. A moment that honors the mystery of being this specific person in this specific life. The reader should finish Section 8 not with an action item but with the sense that they are not broken, they are beautifully made, and the paradox they carry is part of what makes them worth knowing.
 
 SECTION 9 — Your Next 90 Days: This is the section that turns insight into motion. Keep it warm, specific, and grounded. No toxic positivity, no generic self-help language. Everything here should feel like it was chosen specifically for this person's profile.
 
@@ -111,139 +114,152 @@ FORMAT FOR SECTION 9 — use this exact structure so it renders correctly as an 
 
 **[Practice Name].** [One sentence.]
 
+End Section 9 with these exact words on their own line, as the final words of the entire report: 'You are sondering. That is enough.' Do not modify these words. Do not add anything after them. This is the closing breath of the report.
+
 Return ONLY a JSON object with this exact structure, no other text:
 {"sections": [{"title": "Who You Are", "content": "..."}, {"title": "How You Work", "content": "..."}, {"title": "How You Love", "content": "..."}, {"title": "What Drives You", "content": "..."}, {"title": "Your Growth Edges", "content": "..."}, {"title": "Your Path Forward", "content": "..."}, {"title": "The Sonder Lens", "content": "..."}, {"title": "The Whole Picture", "content": "..."}, {"title": "Your Next 90 Days", "content": "..."}]}`;
 
+// Max parse attempts before surfacing an error to the client.
+// Parse failures are intermittent — a second call almost always succeeds.
+const MAX_ATTEMPTS = 2;
+
 export async function POST(request: NextRequest) {
+  let body: { scores?: unknown; context?: unknown };
   try {
-    const body = await request.json();
-    const { scores, context } = body;
+    body = await request.json();
+  } catch {
+    return Response.json({ error: "Invalid request body" }, { status: 400 });
+  }
 
-    if (!scores) {
-      return Response.json({ error: "Missing scores" }, { status: 400 });
+  const { scores, context } = body;
+  if (!scores) {
+    return Response.json({ error: "Missing scores" }, { status: 400 });
+  }
+
+  const dataPayload = context
+    ? JSON.stringify({ scores, context })
+    : JSON.stringify({ scores });
+
+  const userContent = `${dataPayload}\n\nRespond with valid JSON only. Do not wrap the response in markdown code fences. Do not include any preamble, explanation, or trailing commentary. Your entire response must be a single parseable JSON object and nothing else.`;
+
+  let lastErrorMessage = "Something went wrong. Please try again.";
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    // ── Claude API call (streaming keeps the connection alive for long completions) ──
+    let message: Awaited<ReturnType<typeof client.messages.stream.prototype.finalMessage>>;
+    try {
+      const stream = client.messages.stream({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 14000,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content: userContent }],
+      });
+      message = await stream.finalMessage();
+    } catch (error) {
+      // API-level errors (auth, rate limit, billing) are not retry-able
+      console.error(`[generate-report] API error on attempt ${attempt}:`, error);
+      if (error instanceof Anthropic.APIError) {
+        if (error.status === 402) {
+          return Response.json(
+            { error: "API credit balance is too low. Please add credits and try again." },
+            { status: 402 }
+          );
+        }
+        if (error.status === 429) {
+          return Response.json(
+            { error: "We are temporarily rate limited. Please wait 30 seconds and try again." },
+            { status: 429 }
+          );
+        }
+        if (error.status >= 500) {
+          return Response.json(
+            { error: "Our AI is briefly unavailable. Please try again in a moment." },
+            { status: 503 }
+          );
+        }
+      }
+      return Response.json(
+        { error: "Something went wrong. Please try again." },
+        { status: 500 }
+      );
     }
 
-    const userContent = context
-      ? JSON.stringify({ scores, context })
-      : JSON.stringify({ scores });
-
-    // Use streaming to avoid timeout on long completions, collect with finalMessage()
-    const stream = client.messages.stream({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 14000,
-      system: SYSTEM_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: userContent,
-        },
-      ],
-    });
-
-    const message = await stream.finalMessage();
-
-    // Fix 2: Detect truncated response before trying to parse
+    // ── Truncation check ──────────────────────────────────────────────────────
     if (message.stop_reason === "max_tokens") {
-      console.error("Report generation hit max_tokens limit — response was truncated");
-      return Response.json(
-        { error: "Report was cut short — please try again" },
-        { status: 500 }
-      );
+      console.warn(`[generate-report] attempt ${attempt}: response truncated (max_tokens)`);
+      lastErrorMessage = "Report was cut short — please try again";
+      continue;
     }
 
-    const textBlock = message.content.find((b) => b.type === "text");
+    // ── Extract text block ────────────────────────────────────────────────────
+    const textBlock = message.content.find((b: { type: string }) => b.type === "text");
     if (!textBlock || textBlock.type !== "text") {
-      return Response.json(
-        { error: "No text content in response" },
-        { status: 500 }
-      );
+      console.warn(`[generate-report] attempt ${attempt}: no text block in response`);
+      lastErrorMessage = "No text content in response — please try again";
+      continue;
     }
 
-    // Always log the raw response in dev so failures are immediately diagnosable
     const text = textBlock.text;
-    if (process.env.NODE_ENV !== "production") {
-      console.log("[generate-report] raw response (first 500 chars):", text.slice(0, 500));
-    }
+    // Always log first 500 chars so parse failures are diagnosable in production logs
+    console.log(`[generate-report] attempt ${attempt} raw (first 500):`, text.slice(0, 500));
 
-    // Extract the JSON object by finding our expected root key, walking back to the
-    // opening { and forward counting brace depth to the matching }.
+    // ── JSON extraction ───────────────────────────────────────────────────────
     const raw = extractJSONObject(text, "sections");
 
     if (!raw) {
-      console.error("[generate-report] No JSON object found. Full response:", text);
-      return Response.json(
-        { error: "Failed to parse report response — please try again" },
-        { status: 500 }
-      );
+      console.warn(`[generate-report] attempt ${attempt}: no JSON found. Full response:`, text);
+      lastErrorMessage = "Failed to parse report response — please try again";
+      continue;
     }
 
+    // ── Parse + validate ──────────────────────────────────────────────────────
     try {
       const parsed = JSON.parse(raw);
 
-      // Validate the response has the expected structure before returning
-      if (!Array.isArray(parsed.sections) || parsed.sections.length < 9) {
-        console.error(
-          "Report structure invalid — sections:",
+      if (!Array.isArray(parsed.sections) || parsed.sections.length !== 9) {
+        console.warn(
+          `[generate-report] attempt ${attempt}: invalid structure — sections:`,
           parsed.sections?.length ?? "missing",
-          "Raw:",
-          raw.slice(0, 300)
+          "Raw slice:", raw.slice(0, 300)
         );
-        return Response.json(
-          { error: "Report format error — please try again" },
-          { status: 500 }
-        );
+        lastErrorMessage = "Report format error — please try again";
+        continue;
       }
 
+      if (attempt > 1) {
+        console.log(`[generate-report] succeeded on attempt ${attempt}`);
+      }
       return Response.json(parsed);
     } catch (parseErr) {
-      console.error("[generate-report] JSON parse failed. Error:", parseErr, "\nRaw:", raw.slice(0, 1000));
-      return Response.json(
-        { error: "Failed to parse report response — please try again" },
-        { status: 500 }
+      console.warn(
+        `[generate-report] attempt ${attempt}: JSON.parse failed:`,
+        parseErr,
+        "\nRaw slice:", raw.slice(0, 1000)
       );
+      lastErrorMessage = "Failed to parse report response — please try again";
+      continue;
     }
-  } catch (error) {
-    console.error("[generate-report] error:", error);
-
-    if (error instanceof Anthropic.APIError) {
-      if (error.status === 402) {
-        return Response.json(
-          { error: "API credit balance is too low. Please add credits and try again." },
-          { status: 402 }
-        );
-      }
-      if (error.status === 429) {
-        return Response.json(
-          { error: "We are temporarily rate limited. Please wait 30 seconds and try again." },
-          { status: 429 }
-        );
-      }
-      if (error.status >= 500) {
-        return Response.json(
-          { error: "Our AI is briefly unavailable. Please try again in a moment." },
-          { status: 503 }
-        );
-      }
-    }
-
-    return Response.json(
-      { error: "Something went wrong. Please try again." },
-      { status: 500 }
-    );
   }
+
+  // All attempts exhausted
+  console.error(`[generate-report] all ${MAX_ATTEMPTS} attempts failed. Last error: ${lastErrorMessage}`);
+  return Response.json({ error: lastErrorMessage }, { status: 500 });
 }
 
 /**
  * Extracts the first complete JSON object containing `rootKey` from arbitrary text.
- * Handles preamble text, markdown fences, and trailing notes robustly.
- * Uses key-based search + brace depth counting — immune to { } in surrounding text.
+ * Three strategies in order of precision:
+ *   1. Fast path — text is already clean JSON
+ *   2. Key-based — find rootKey, walk back to opening {, count brace depth to closing }
+ *   3. Fence strip — strip markdown fences, return remainder if it starts with {
+ *   4. Brute-force — slice from first { to last }, attempt parse
  */
 function extractJSONObject(text: string, rootKey: string): string | null {
-  // Fast path: text is already clean JSON
+  // Strategy 1: text is already clean JSON
   const trimmed = text.trim();
   if (trimmed.startsWith("{")) return trimmed;
 
-  // Find the root key, walk backward to the opening {, then count brace depth forward
+  // Strategy 2: find root key, walk back to opening {, brace-count forward
   const keyIdx = text.indexOf(`"${rootKey}"`);
   if (keyIdx !== -1) {
     for (let i = keyIdx - 1; i >= 0; i--) {
@@ -256,14 +272,21 @@ function extractJSONObject(text: string, rootKey: string): string | null {
             if (depth === 0) return text.slice(i, j + 1);
           }
         }
-        break; // unbalanced braces — fall through to next strategy
+        break; // unbalanced — fall through
       }
     }
   }
 
-  // Fallback: strip markdown fences and return the remainder
+  // Strategy 3: strip markdown fences
   const stripped = trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
   if (stripped.startsWith("{")) return stripped;
+
+  // Strategy 4: brute-force — first { to last }
+  const firstBrace = text.indexOf("{");
+  const lastBrace = text.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    return text.slice(firstBrace, lastBrace + 1);
+  }
 
   return null;
 }
