@@ -2,7 +2,18 @@
   "permissions": {
     "allow": [
       "Bash(npx tsc *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(vercel *)",
+      "Bash(npm i *)",
+      "Bash(git -C C:/Users/hillj/Documents/sonder status --porcelain)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "WebSearch",
+      "Bash(npx vercel@latest project ls)",
+      "Bash(npx vercel *)",
+      "Bash(python -m json.tool)"
     ]
   }
 }

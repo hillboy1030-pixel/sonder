@@ -127,7 +127,7 @@ export default function HomePage() {
             alignItems: "center",
             justifyContent: "center",
             textAlign: "center",
-            padding: "0 24px",
+            padding: "100px 24px 0",
             maxWidth: "880px",
             margin: "0 auto",
           }}
@@ -171,17 +171,17 @@ export default function HomePage() {
               animationFillMode: "both",
             }}
           >
-            Come inward.
+            Welcome to Sonder.
           </h1>
 
           {/* Subheadline */}
           <p
             style={{
-              fontSize: "clamp(15px, 1.8vw, 20px)",
-              color: "rgba(255,255,255,0.72)",
-              lineHeight: 1.55,
+              fontSize: "clamp(12px, 1.2vw, 14px)",
+              color: "rgba(255,255,255,0.68)",
+              lineHeight: 1.65,
               marginBottom: "44px",
-              maxWidth: "560px",
+              maxWidth: "520px",
               animationName: "fadeUp",
               animationDuration: "0.9s",
               animationTimingFunction: "ease-out",
@@ -189,7 +189,7 @@ export default function HomePage() {
               animationFillMode: "both",
             }}
           >
-            The most unexamined territory you will ever explore is the one you wake up inside every morning. Sonder is a map.
+            Sonder is a self-understanding tool built on four validated psychological frameworks — the Big Five, the Holland Code, attachment theory, and the VIA strengths inventory. Answer 72 honest questions, receive three free insight cards, and unlock a nine-section written portrait of how you think, work, love, and grow. One-time, $5. Your data never leaves your browser.
           </p>
 
           {/* CTA button */}
@@ -417,13 +417,13 @@ function HeroButton() {
       onMouseLeave={() => setHovered(false)}
       style={{
         display: "inline-block",
-        padding: "18px 56px",
+        padding: "20px 64px",
         borderRadius: "9999px",
         background: hovered ? "rgba(255,255,255,0.96)" : "rgba(255,255,255,0.16)",
         border: "1.5px solid rgba(255,255,255,0.65)",
         color: hovered ? "#3D5A3E" : "white",
         fontWeight: 600,
-        fontSize: "17px",
+        fontSize: "18px",
         letterSpacing: "0.04em",
         textDecoration: "none",
         backdropFilter: "blur(10px)",
@@ -451,13 +451,13 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
       onMouseLeave={() => setHovered(false)}
       style={{
         display: "inline-block",
-        padding: "10px 24px",
+        padding: "7px 18px",
         borderRadius: "9999px",
         background: hovered ? "rgba(255,255,255,0.96)" : "rgba(255,255,255,0.16)",
         border: "1.5px solid rgba(255,255,255,0.65)",
         color: hovered ? "#3D5A3E" : "white",
         fontWeight: 600,
-        fontSize: "13px",
+        fontSize: "11px",
         letterSpacing: "0.04em",
         textDecoration: "none",
         backdropFilter: "blur(10px)",
@@ -481,7 +481,7 @@ const STEPS = [
     number: "01",
     title: "Take the assessment",
     description:
-      "72 questions across four research-backed frameworks. Honest answers yield the most accurate picture.",
+      "72 questions across four research-backed frameworks. Takes about 10 minutes. Honest answers yield the most accurate picture.",
   },
   {
     number: "02",
@@ -493,7 +493,7 @@ const STEPS = [
     number: "03",
     title: "Unlock your full report",
     description:
-      "For a one-time $5 payment, receive your complete eight-section psychological portrait.",
+      "For a one-time $5 payment, receive your complete Sonder Report.",
   },
   {
     number: "04",

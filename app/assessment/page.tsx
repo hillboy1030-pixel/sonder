@@ -56,7 +56,7 @@ const DEV_CONTEXT: SonderContext = {
 
 export default function AssessmentPage() {
   const router = useRouter();
-  const [intakeStep, setIntakeStep] = useState<"screen1" | "transition" | "screen2" | "questions">("screen1");
+  const [intakeStep, setIntakeStep] = useState<"screen1" | "screen2" | "questions">("screen1");
   const [context, setContext] = useState<SonderContext>({
     ageRange: "",
     relationshipStatus: "",
@@ -94,8 +94,7 @@ export default function AssessmentPage() {
   }
 
   function handleScreen1Continue() {
-    setIntakeStep("transition");
-    setTimeout(() => setIntakeStep("screen2"), 1800);
+    setIntakeStep("screen2");
   }
 
   function handleScreen2Continue() {
@@ -134,19 +133,6 @@ export default function AssessmentPage() {
         <button onClick={handleDevFill} className="fixed bottom-4 left-4 z-50 bg-bark text-parchment text-xs font-medium px-3 py-2 rounded opacity-70 hover:opacity-100 transition-opacity">
           Founder Test
         </button>
-      </div>
-    );
-  }
-
-  if (intakeStep === "transition") {
-    return (
-      <div className="min-h-screen bg-[#F9F7F4] flex flex-col items-center justify-center px-6">
-        <p
-          className="text-bark text-center text-lg sm:text-xl max-w-sm leading-relaxed animate-fade-up"
-          style={{ fontFamily: "var(--font-playfair), Georgia, serif", fontStyle: "italic" }}
-        >
-          A few more questions, closer to the surface of things.
-        </p>
       </div>
     );
   }
@@ -499,7 +485,7 @@ function IntakeScreen2({
         {/* Too much */}
         <div>
           <p className="text-sm font-medium text-bark mb-3">
-            What&rsquo;s a quality you have that people sometimes tell you is &ldquo;too much&rdquo;?{" "}
+            What&rsquo;s something about you that you&rsquo;ve learned to love, even if others haven&rsquo;t always understood it?{" "}
             <span className="font-normal text-stone">(optional)</span>
           </p>
           <input
@@ -528,7 +514,7 @@ function IntakeScreen2({
 
         {/* Worst self — required */}
         <IntakeRadioGroup
-          label="When you're at your worst, you tend to:"
+          label="When life gets hard, you tend to:"
           options={[
             "Withdraw and go quiet",
             "Push harder and control more",
