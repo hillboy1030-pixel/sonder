@@ -340,37 +340,6 @@ function ReportPreview({ previewInsights }: { previewInsights: PreviewInsight[] 
           />
         </div>
 
-        {/* Quiet share prompt */}
-        <p
-          className="text-center mb-8"
-          style={{
-            fontFamily: "var(--font-playfair), Georgia, serif",
-            fontStyle: "italic",
-            fontSize: "13px",
-            color: "#8A8278",
-            lineHeight: 1.6,
-          }}
-        >
-          If Sonder helped you, share it with one person who would understand. This works better quietly.
-        </p>
-
-        {/* Share button */}
-        <div className="flex flex-col items-center gap-1.5 mb-12">
-          <button
-            onClick={handleShare}
-            disabled={shareLoading}
-            className={`w-full sm:w-auto px-8 py-3 rounded-full font-medium text-sm tracking-wide transition-colors duration-200 ${
-              shareLoading
-                ? "border border-stone-light text-stone cursor-not-allowed"
-                : "border-forest text-forest hover:bg-forest/6 cursor-pointer"
-            }`}
-            style={shareLoading ? undefined : { borderWidth: "1.5px", borderStyle: "solid", borderColor: "#2D4A2E", color: "#2D4A2E" }}
-          >
-            {shareLoading ? "Generating image…" : "Share Your Sonder"}
-          </button>
-          <p className="text-xs text-stone">Share with one thoughtful person. This works better quietly than loudly.</p>
-        </div>
-
         {/* Locked sections */}
         <div className="mb-10">
           <p className="text-xs font-medium text-stone uppercase tracking-widest mb-4">
@@ -382,20 +351,6 @@ function ReportPreview({ previewInsights }: { previewInsights: PreviewInsight[] 
             ))}
           </div>
         </div>
-
-        {/* Expectation note — sits quietly above the CTA */}
-        <p
-          className="text-center mb-5"
-          style={{
-            fontFamily: "var(--font-playfair), Georgia, serif",
-            fontStyle: "italic",
-            fontSize: "13px",
-            color: "#B8B2A8",
-            lineHeight: 1.6,
-          }}
-        >
-          Your full report takes a few minutes to write. We don&rsquo;t rush this part.
-        </p>
 
         {/* CTA — bottom */}
         <CheckoutButtons
@@ -499,6 +454,17 @@ function CheckoutButtons({
       {checkoutError && (
         <p className="text-xs text-bark">{checkoutError}</p>
       )}
+      <p
+        style={{
+          fontFamily: "var(--font-playfair), Georgia, serif",
+          fontStyle: "italic",
+          fontSize: "13px",
+          color: "#B8B2A8",
+          lineHeight: 1.6,
+        }}
+      >
+        Your full report takes two to three minutes to write. We don&rsquo;t rush this part.
+      </p>
       <p className="text-xs text-stone max-w-xs leading-relaxed">
         One-time payment. Your report is yours to download. We never store
         your data.

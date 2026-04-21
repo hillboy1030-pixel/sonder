@@ -294,7 +294,7 @@ function IntakeScreen({
         <h1 className="font-serif text-3xl sm:text-4xl font-bold text-bark mb-2" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
           Tell me about your life.
         </h1>
-        <p className="text-stone text-sm">
+        <p className="text-bark-light text-lg sm:text-xl">
           I&rsquo;ll use this to write for you, not someone like you.
         </p>
       </div>
@@ -330,8 +330,7 @@ function IntakeScreen({
         {/* Work field */}
         <div>
           <p className="text-sm font-medium text-bark mb-3">
-            What field do you work in?{" "}
-            <span className="font-normal text-stone">(optional)</span>
+            What field do you work in?
           </p>
           <input
             type="text"
@@ -346,8 +345,7 @@ function IntakeScreen({
         {/* Hobby / long-term pursuit */}
         <div>
           <p className="text-sm font-medium text-bark mb-3">
-            Is there a skill or pursuit you&rsquo;ve spent years refining?{" "}
-            <span className="font-normal text-stone">(optional)</span>
+            Is there a skill or pursuit you&rsquo;ve spent years refining?
           </p>
           <textarea
             maxLength={150}
@@ -404,7 +402,7 @@ function IntakeScreen({
 
       <div className="mt-6 flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
         <p className="text-xs text-stone max-w-xs leading-relaxed text-center sm:text-left">
-          Everything here is optional. Nothing is stored on our servers.
+          Everything here is optional. Your answers never leave your browser.
         </p>
         <button
           onClick={onContinue}
@@ -461,8 +459,7 @@ function IntakeScreen2({
         {/* Hardest thing */}
         <div>
           <p className="text-sm font-medium text-bark mb-3">
-            What&rsquo;s the hardest thing you&rsquo;re navigating right now?{" "}
-            <span className="font-normal text-stone">(optional)</span>
+            What&rsquo;s the hardest thing you&rsquo;re navigating right now?
           </p>
           <input
             type="text"
@@ -477,8 +474,7 @@ function IntakeScreen2({
         {/* Social perception */}
         <div>
           <p className="text-sm font-medium text-bark mb-3">
-            How do the people closest to you describe you?{" "}
-            <span className="font-normal text-stone">(optional)</span>
+            How do the people closest to you describe you?
           </p>
           <input
             type="text"
@@ -493,8 +489,7 @@ function IntakeScreen2({
         {/* Too much */}
         <div>
           <p className="text-sm font-medium text-bark mb-3">
-            What&rsquo;s something about you that you&rsquo;ve learned to love, even if others haven&rsquo;t always understood it?{" "}
-            <span className="font-normal text-stone">(optional)</span>
+            What&rsquo;s something about you that you&rsquo;ve learned to love, even if others haven&rsquo;t always understood it?
           </p>
           <input
             type="text"
@@ -538,7 +533,7 @@ function IntakeScreen2({
 
       <div className="mt-10 flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
         <p className="text-xs text-stone max-w-xs leading-relaxed text-center sm:text-left">
-          Your answers are yours alone. Nothing is stored.
+          Everything here is optional. Your answers never leave your browser.
         </p>
         <button
           onClick={onContinue}
@@ -577,7 +572,6 @@ function IntakeRadioGroup({
     <div>
       <p className="text-sm font-medium text-bark mb-3">
         {label}{" "}
-        {optional && <span className="font-normal text-stone">(optional)</span>}
         {required && <span className="font-normal text-forest"> *</span>}
       </p>
       <div className="flex flex-wrap gap-2">

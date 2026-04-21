@@ -42,6 +42,31 @@ Return ONLY a JSON object with this exact structure, no other text:
 // Parse failures are intermittent — a second call almost always succeeds.
 const MAX_ATTEMPTS = 2;
 
+// Tool schema — forces the API to serialize the output itself, eliminating JSON parse failures.
+const PREVIEW_TOOL: Anthropic.Tool = {
+  name: "return_preview_insights",
+  description: "Return exactly three preview insight cards.",
+  input_schema: {
+    type: "object",
+    properties: {
+      previewInsights: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            title:   { type: "string" },
+            insight: { type: "string" },
+          },
+          required: ["title", "insight"],
+        },
+        minItems: 3,
+        maxItems: 3,
+      },
+    },
+    required: ["previewInsights"],
+  },
+};
+
 export async function POST(request: NextRequest) {
   let body: { scores?: unknown; context?: unknown };
   try {
@@ -59,21 +84,23 @@ export async function POST(request: NextRequest) {
     ? JSON.stringify({ scores, context })
     : JSON.stringify({ scores });
 
-  const userContent = `${dataPayload}\n\nRespond with valid JSON only. Do not wrap the response in markdown code fences. Do not include any preamble, explanation, or trailing commentary. Your entire response must be a single parseable JSON object and nothing else.`;
+  const userContent = `${dataPayload}\n\nGenerate the three preview insight cards using the return_preview_insights tool.`;
 
   let lastErrorMessage = "Something went wrong. Please try again.";
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    // ── Claude API call ──────────────────────────────────────────────────────
-    let message: Awaited<ReturnType<typeof client.messages.stream.prototype.finalMessage>>;
+    // ── Claude API call (tool_use guarantees valid structured output) ─────────
+    let response: Anthropic.Message;
     try {
-      const stream = client.messages.stream({
+      response = await client.messages.create({
+        stream: false,
         model: "claude-sonnet-4-20250514",
-        max_tokens: 2000,
+        max_tokens: 4000,
         system: SYSTEM_PROMPT,
+        tools: [PREVIEW_TOOL],
+        tool_choice: { type: "tool", name: "return_preview_insights" },
         messages: [{ role: "user", content: userContent }],
       });
-      message = await stream.finalMessage();
     } catch (error) {
       // API-level errors (auth, rate limit, billing) are not retry-able
       console.error(`[generate-preview] API error on attempt ${attempt}:`, error);
@@ -103,62 +130,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ── Truncation check ─────────────────────────────────────────────────────
-    if (message.stop_reason === "max_tokens") {
-      console.warn(`[generate-preview] attempt ${attempt}: response truncated (max_tokens)`);
-      lastErrorMessage = "Preview was cut short — please try again";
-      continue; // retry — a shorter response may fit
-    }
-
-    // ── Extract text block ───────────────────────────────────────────────────
-    const textBlock = message.content.find((b: { type: string }) => b.type === "text");
-    if (!textBlock || textBlock.type !== "text") {
-      console.warn(`[generate-preview] attempt ${attempt}: no text block in response`);
-      lastErrorMessage = "No text content in response — please try again";
+    // ── Extract tool_use result ───────────────────────────────────────────────
+    const toolUse = response.content.find((b) => b.type === "tool_use");
+    if (!toolUse || toolUse.type !== "tool_use") {
+      console.warn(`[generate-preview] attempt ${attempt}: no tool_use block in response`);
+      lastErrorMessage = "Preview generation failed — please try again";
       continue;
     }
 
-    const text = textBlock.text;
-    if (process.env.NODE_ENV !== "production") {
-      console.log(`[generate-preview] attempt ${attempt} raw (first 500):`, text.slice(0, 500));
-    }
-
-    // ── JSON extraction ──────────────────────────────────────────────────────
-    const raw = extractJSONObject(text, "previewInsights");
-
-    if (!raw) {
-      console.warn(`[generate-preview] attempt ${attempt}: no JSON found. Full response:`, text);
-      lastErrorMessage = "Failed to parse preview response — please try again";
-      continue;
-    }
-
-    // ── Parse + validate ─────────────────────────────────────────────────────
-    try {
-      const parsed = JSON.parse(raw);
-
-      if (!Array.isArray(parsed.previewInsights) || parsed.previewInsights.length !== 3) {
-        console.warn(
-          `[generate-preview] attempt ${attempt}: invalid structure — previewInsights:`,
-          parsed.previewInsights?.length ?? "missing"
-        );
-        lastErrorMessage = "Preview format error — please try again";
-        continue;
-      }
-
-      if (attempt > 1) {
-        console.log(`[generate-preview] succeeded on attempt ${attempt}`);
-      }
-      return Response.json(parsed);
-    } catch (parseErr) {
+    // ── Validate structure ────────────────────────────────────────────────────
+    const data = toolUse.input as { previewInsights?: { title: string; insight: string }[] };
+    if (!Array.isArray(data.previewInsights) || data.previewInsights.length !== 3) {
       console.warn(
-        `[generate-preview] attempt ${attempt}: JSON.parse failed:`,
-        parseErr,
-        "\nRaw slice:",
-        raw.slice(0, 500)
+        `[generate-preview] attempt ${attempt}: invalid structure — previewInsights:`,
+        data.previewInsights?.length ?? "missing"
       );
-      lastErrorMessage = "Failed to parse preview response — please try again";
+      lastErrorMessage = "Preview format error — please try again";
       continue;
     }
+
+    if (attempt > 1) {
+      console.log(`[generate-preview] succeeded on attempt ${attempt}`);
+    }
+    return Response.json(data);
   }
 
   // All attempts exhausted
@@ -166,47 +160,3 @@ export async function POST(request: NextRequest) {
   return Response.json({ error: lastErrorMessage }, { status: 500 });
 }
 
-/**
- * Extracts the first complete JSON object containing `rootKey` from arbitrary text.
- * Three strategies in order of precision:
- *   1. Fast path — text is already clean JSON
- *   2. Key-based — find rootKey, walk back to opening {, count brace depth to closing }
- *   3. Fence strip — strip markdown fences, return remainder if it starts with {
- *   4. Brute-force — slice from first { to last }, attempt parse
- */
-function extractJSONObject(text: string, rootKey: string): string | null {
-  // Strategy 1: text is already clean JSON
-  const trimmed = text.trim();
-  if (trimmed.startsWith("{")) return trimmed;
-
-  // Strategy 2: find root key, walk back to opening {, brace-count forward
-  const keyIdx = text.indexOf(`"${rootKey}"`);
-  if (keyIdx !== -1) {
-    for (let i = keyIdx - 1; i >= 0; i--) {
-      if (text[i] === "{") {
-        let depth = 0;
-        for (let j = i; j < text.length; j++) {
-          if (text[j] === "{") depth++;
-          else if (text[j] === "}") {
-            depth--;
-            if (depth === 0) return text.slice(i, j + 1);
-          }
-        }
-        break; // unbalanced — fall through
-      }
-    }
-  }
-
-  // Strategy 3: strip markdown fences
-  const stripped = trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
-  if (stripped.startsWith("{")) return stripped;
-
-  // Strategy 4: brute-force — first { to last }
-  const firstBrace = text.indexOf("{");
-  const lastBrace = text.lastIndexOf("}");
-  if (firstBrace !== -1 && lastBrace > firstBrace) {
-    return text.slice(firstBrace, lastBrace + 1);
-  }
-
-  return null;
-}

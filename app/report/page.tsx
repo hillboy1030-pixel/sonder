@@ -503,23 +503,18 @@ async function generatePDF(report: Report, insights: PreviewInsight[]): Promise<
   doc.line(W / 2, 243, W / 2, 253);
   doc.line(W / 2 - 6, 248, W / 2 + 6, 248);
 
-  // Title
+  // Cover title — two-line visual anchor
   doc.setFont("times", "bold");
-  doc.setFontSize(26);
+  doc.setFontSize(42);
   tc(BARK);
-  doc.text("Your Sonder Report", W / 2, 298, { align: "center" });
+  doc.text("A portrait of", W / 2, 328, { align: "center" });
+  doc.text("who you are.", W / 2, 382, { align: "center" });
 
-  // Date
-  doc.setFont("times", "normal");
+  // Date line — replaces standalone date
+  doc.setFont("times", "italic");
   doc.setFontSize(11);
   tc(STONE);
-  doc.text(TODAY, W / 2, 322, { align: "center" });
-
-  // Tagline near bottom
-  doc.setFont("times", "italic");
-  doc.setFontSize(12);
-  tc(STONE_LIGHT);
-  doc.text("You are sondering.", W / 2, H - 108, { align: "center" });
+  doc.text(`Generated from your 72 answers on ${TODAY}`, W / 2, 418, { align: "center" });
 
   // Domain on cover (no page number; addFooter is gated by pastCover)
   doc.setFont("times", "normal");
