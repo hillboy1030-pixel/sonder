@@ -324,20 +324,6 @@ export default function HomePage() {
                   <p style={{ fontSize: "15px", color: "#8A8278", lineHeight: 1.7 }}>
                     {step.description}
                   </p>
-                  {i === 2 && (
-                    <p style={{ fontSize: "11px", color: "#8A8278", lineHeight: 1.8, marginTop: "12px" }}>
-                      {"Who You Are · How You Work · How You Love · What Drives You · Your Growth Edges · Your Path Forward · The Sonder Lens · The Whole Picture"
-                        .split(" · ")
-                        .map((name, idx, arr) => (
-                          <span key={name}>
-                            {name}
-                            {idx < arr.length - 1 && (
-                              <span style={{ color: "#3D5A3E", margin: "0 5px" }}>·</span>
-                            )}
-                          </span>
-                        ))}
-                    </p>
-                  )}
                 </div>
               </div>
               {i < STEPS.length - 1 && (

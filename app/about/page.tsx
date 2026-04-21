@@ -85,20 +85,43 @@ export default function AboutPage() {
         {/* Divider */}
         <div style={{ height: "1px", background: "rgba(184,178,168,0.35)", margin: "56px 0 44px" }} />
 
-        {/* Back link */}
-        <a
-          href="/"
-          style={{
-            fontSize: "13px",
-            color: "#8A8278",
-            textDecoration: "none",
-            letterSpacing: "0.02em",
-          }}
-          onMouseEnter={e => (e.currentTarget.style.color = "#2A2620")}
-          onMouseLeave={e => (e.currentTarget.style.color = "#8A8278")}
-        >
-          ← Return home
-        </a>
+        {/* CTA */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", marginBottom: "0" }}>
+          <a
+            href="/assessment"
+            style={{
+              display: "inline-block",
+              padding: "18px 56px",
+              borderRadius: "9999px",
+              background: "#3D5A3E",
+              color: "#F5F0E8",
+              fontWeight: 600,
+              fontSize: "17px",
+              letterSpacing: "0.03em",
+              textDecoration: "none",
+              transition: "background 0.2s",
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = "#4a6e4b")}
+            onMouseLeave={e => (e.currentTarget.style.background = "#3D5A3E")}
+          >
+            Begin your sonder →
+          </a>
+
+          {/* Back link */}
+          <a
+            href="/"
+            style={{
+              fontSize: "13px",
+              color: "#8A8278",
+              textDecoration: "none",
+              letterSpacing: "0.02em",
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = "#2A2620")}
+            onMouseLeave={e => (e.currentTarget.style.color = "#8A8278")}
+          >
+            ← Return home
+          </a>
+        </div>
       </main>
     </div>
   );

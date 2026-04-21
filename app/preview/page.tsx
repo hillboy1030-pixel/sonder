@@ -30,8 +30,17 @@ const LOCKED_SECTION_TITLES = [
   "Your Next 90 Days",
 ];
 
-const BLUR_PLACEHOLDER =
-  "This section contains a detailed analysis of your results based on your responses across all four assessment frameworks. Unlock your full report to read the complete portrait.";
+const LOCKED_SECTION_TEASERS: Record<string, string> = {
+  "Who You Are":        "The shape of your mind, named.",
+  "How You Work":       "What your career is actually asking of you.",
+  "How You Love":       "The pattern underneath your closest relationships.",
+  "What Drives You":    "The question you've been organizing your life around.",
+  "Your Growth Edges":  "The places your greatest gifts cost you the most.",
+  "Your Path Forward":  "The work this chapter of your life is asking you to do.",
+  "The Sonder Lens":    "Three things you consistently misread about other people.",
+  "The Whole Picture":  "The central paradox of who you are.",
+  "Your Next 90 Days":  "Three books, three prompts, three practices.",
+};
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -534,19 +543,21 @@ function InsightCard({
 
 function LockedSection({ title }: { title: string }) {
   return (
-    <div className="relative bg-white border border-stone-light/30 rounded overflow-hidden">
-      <div className="px-5 py-4">
-        <p className="font-serif font-semibold text-bark mb-2">{title}</p>
-        <p className="text-sm text-bark-light leading-relaxed blur-sm select-none pointer-events-none">
-          {BLUR_PLACEHOLDER}
-        </p>
-      </div>
-      {/* Lock overlay */}
-      <div className="absolute inset-0 flex items-center justify-center bg-parchment/40">
-        <span className="text-xs font-medium text-stone bg-parchment border border-stone-light/50 px-3 py-1.5 rounded-full">
+    <div className="bg-white border border-stone-light/30 rounded px-5 py-4">
+      {/* Title row with Locked badge */}
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <p className="font-serif font-semibold text-bark">{title}</p>
+        <span
+          className="shrink-0 text-stone border border-stone-light/50 px-3 py-1 rounded-full"
+          style={{ fontSize: "12px", letterSpacing: "0.04em" }}
+        >
           Locked
         </span>
       </div>
+      {/* Teaser */}
+      <p className="text-sm text-stone leading-relaxed" style={{ fontStyle: "italic" }}>
+        {LOCKED_SECTION_TEASERS[title] ?? ""}
+      </p>
     </div>
   );
 }
