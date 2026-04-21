@@ -181,7 +181,7 @@ export default function HomePage() {
               animationFillMode: "both",
             }}
           >
-            Welcome to Sonder.
+            Come inward.
           </h1>
 
           {/* Subheadline */}
@@ -199,7 +199,7 @@ export default function HomePage() {
               animationFillMode: "both",
             }}
           >
-            Sonder is a self-understanding tool built on four validated psychological frameworks — the Big Five, the Holland Code, attachment theory, and the VIA strengths inventory. Answer 72 honest questions, receive three free insight cards, and unlock a nine-section written portrait of how you think, work, love, and grow. Your data never leaves your browser.
+            A 72-question assessment grounded in validated psychology. A nine-section portrait of how you think, work, love, and grow. Your answers never leave your browser.
           </p>
 
           {/* CTA button */}
@@ -215,23 +215,6 @@ export default function HomePage() {
             <HeroButton />
           </div>
 
-          {/* Tagline below CTA */}
-          <p
-            style={{
-              fontFamily: "var(--font-playfair), Georgia, serif",
-              fontStyle: "italic",
-              fontSize: "14px",
-              color: "rgba(255,255,255,0.52)",
-              marginTop: "20px",
-              animationName: "fadeUp",
-              animationDuration: "0.9s",
-              animationTimingFunction: "ease-out",
-              animationDelay: "750ms",
-              animationFillMode: "both",
-            }}
-          >
-            Understand yourself better. Sonder more deeply.
-          </p>
 
         </div>
 
