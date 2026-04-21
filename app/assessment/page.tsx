@@ -44,7 +44,7 @@ const DEV_CONTEXT: SonderContext = {
   hasChildren: "Yes",
   workField: "Financial advisor for State Farm, just started.",
   hobby: "I've been playing pool (8ball, 9ball) for 20 years and love it. Still competing and practicing every week. It's my passion.",
-  clarityGoal: "All of the above",
+  clarityGoal: "career direction, relationships, and who I am as a person",
   hardestThing: "Starting a new career at State Farm while trying to be present for my family",
   socialPerception: "They say I'm always on, always helping, never seem to need anything",
   tooMuch: "My need to see potential in everyone and everything",
@@ -283,7 +283,13 @@ function IntakeScreen({
   onContinue: () => void;
 }) {
   const [agreed, setAgreed] = useState(false);
-  const canContinue = context.clarityGoal !== "" && agreed;
+  const [claritySelections, setClaritySelections] = useState<string[]>([]);
+  const canContinue = claritySelections.length > 0 && agreed;
+
+  function handleContinue() {
+    onChange({ ...context, clarityGoal: joinClarityGoals(claritySelections) });
+    onContinue();
+  }
 
   return (
     <div>
@@ -357,19 +363,36 @@ function IntakeScreen({
           />
         </div>
 
-        {/* Clarity goal — required */}
-        <IntakeRadioGroup
-          label="What do you most want clarity on?"
-          options={[
-            "My career direction",
-            "My relationships",
-            "Who I am as a person",
-            "All of the above",
-          ]}
-          value={context.clarityGoal}
-          onChange={(v) => onChange({ ...context, clarityGoal: v })}
-          required
-        />
+        {/* Clarity goal — required, multi-select */}
+        <div>
+          <p className="text-sm font-medium text-bark mb-3">
+            What do you most want clarity on?{" "}
+            <span className="font-normal text-forest"> *</span>
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {["My career direction", "My relationships", "Who I am as a person"].map((opt) => {
+              const selected = claritySelections.includes(opt);
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() =>
+                    setClaritySelections((prev) =>
+                      prev.includes(opt) ? prev.filter((o) => o !== opt) : [...prev, opt]
+                    )
+                  }
+                  className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-150 select-none ${
+                    selected
+                      ? "bg-sage/25 text-forest border border-sage/40 shadow-sm"
+                      : "bg-transparent border border-stone-light/60 text-bark-light hover:border-forest/50 hover:text-forest"
+                  }`}
+                >
+                  {opt}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* Disclaimer checkbox */}
@@ -405,7 +428,7 @@ function IntakeScreen({
           Everything here is optional. Your answers never leave your browser.
         </p>
         <button
-          onClick={onContinue}
+          onClick={handleContinue}
           disabled={!canContinue}
           className={`w-full sm:w-auto px-7 py-3 rounded-full font-medium text-base tracking-wide transition-all duration-200 ${
             canContinue
@@ -549,6 +572,16 @@ function IntakeScreen2({
       </div>
     </div>
   );
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function joinClarityGoals(goals: string[]): string {
+  // "My career direction" → "career direction", "Who I am as a person" → "who I am as a person"
+  const normalized = goals.map((g) => g.replace(/^My /, "").toLowerCase());
+  if (normalized.length === 1) return normalized[0];
+  if (normalized.length === 2) return `${normalized[0]} and ${normalized[1]}`;
+  return `${normalized.slice(0, -1).join(", ")}, and ${normalized[normalized.length - 1]}`;
 }
 
 // ─── Intake Radio Group ───────────────────────────────────────────────────────
