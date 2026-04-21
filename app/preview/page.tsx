@@ -331,6 +331,15 @@ function ReportPreview({ previewInsights }: { previewInsights: PreviewInsight[] 
           ))}
         </div>
 
+        {/* CTA — top (above share) */}
+        <div className="mb-10">
+          <CheckoutButtons
+            checkoutLoading={checkoutLoading}
+            checkoutError={checkoutError}
+            onCheckout={handleCheckout}
+          />
+        </div>
+
         {/* Quiet share prompt */}
         <p
           className="text-center mb-8"
@@ -388,33 +397,12 @@ function ReportPreview({ previewInsights }: { previewInsights: PreviewInsight[] 
           Your full report takes a few minutes to write. We don&rsquo;t rush this part.
         </p>
 
-        {/* CTA */}
-        <div className="flex flex-col items-center text-center gap-3 pt-4">
-          <button
-            onClick={handleCheckout}
-            disabled={checkoutLoading}
-            className={`w-full sm:w-auto inline-block font-medium text-base px-10 py-4 rounded-full tracking-wide transition-colors duration-200 text-center ${
-              checkoutLoading
-                ? "bg-stone-light/40 text-stone cursor-not-allowed"
-                : "bg-forest text-parchment hover:bg-forest-light cursor-pointer"
-            }`}
-          >
-            {checkoutLoading ? "Redirecting to checkout…" : "Sonder Deeper — $5"}
-          </button>
-          {checkoutError && (
-            <p className="text-xs text-bark">{checkoutError}</p>
-          )}
-          <p className="text-xs text-stone max-w-xs leading-relaxed">
-            One-time payment. Your report is yours to download. We never store
-            your data.
-          </p>
-          <a
-            href="/report?tester=true"
-            className="w-full sm:w-auto inline-block font-medium text-base px-10 py-4 rounded-full tracking-wide transition-colors duration-200 text-center bg-forest text-parchment hover:bg-forest-light"
-          >
-            View Full Report (Testers Only)
-          </a>
-        </div>
+        {/* CTA — bottom */}
+        <CheckoutButtons
+          checkoutLoading={checkoutLoading}
+          checkoutError={checkoutError}
+          onCheckout={handleCheckout}
+        />
       </main>
 
       {/* Hidden share card — rendered off-screen for html2canvas capture */}
@@ -485,6 +473,45 @@ function truncateToTwoSentences(text: string): string {
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
+
+function CheckoutButtons({
+  checkoutLoading,
+  checkoutError,
+  onCheckout,
+}: {
+  checkoutLoading: boolean;
+  checkoutError: string | null;
+  onCheckout: () => void;
+}) {
+  return (
+    <div className="flex flex-col items-center text-center gap-3 pt-4">
+      <button
+        onClick={onCheckout}
+        disabled={checkoutLoading}
+        className={`w-full sm:w-auto inline-block font-medium text-base px-10 py-4 rounded-full tracking-wide transition-colors duration-200 text-center ${
+          checkoutLoading
+            ? "bg-stone-light/40 text-stone cursor-not-allowed"
+            : "bg-forest text-parchment hover:bg-forest-light cursor-pointer"
+        }`}
+      >
+        {checkoutLoading ? "Redirecting to checkout…" : "Sonder Deeper — $5"}
+      </button>
+      {checkoutError && (
+        <p className="text-xs text-bark">{checkoutError}</p>
+      )}
+      <p className="text-xs text-stone max-w-xs leading-relaxed">
+        One-time payment. Your report is yours to download. We never store
+        your data.
+      </p>
+      <a
+        href="/report?tester=true"
+        className="w-full sm:w-auto inline-block font-medium text-base px-10 py-4 rounded-full tracking-wide transition-colors duration-200 text-center bg-forest text-parchment hover:bg-forest-light"
+      >
+        View Full Report (Testers Only)
+      </a>
+    </div>
+  );
+}
 
 function InsightCard({
   insight,
