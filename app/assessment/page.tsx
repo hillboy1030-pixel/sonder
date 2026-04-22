@@ -5,19 +5,17 @@ export const dynamic = "force-dynamic";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { SECTIONS, TOTAL_QUESTIONS } from "@/lib/questions";
-import { calculateScores } from "@/lib/scoring"; // used by handleNext
+import { calculateScores } from "@/lib/scoring";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type SonderContext = {
-  // Screen 1
   ageRange: string;
   relationshipStatus: string;
   hasChildren: string;
   workField: string;
   hobby: string;
   clarityGoal: string;
-  // Screen 2
   hardestThing: string;
   socialPerception: string;
   tooMuch: string;
@@ -25,7 +23,8 @@ type SonderContext = {
   worstSelf: string;
 };
 
-// ─── Dev-only test data (real scores from user's own assessment) ──────────────
+// ─── Dev-only test data ───────────────────────────────────────────────────────
+
 const DEV_SCORES = {
   bigFive: { Neuroticism: 53, Extraversion: 80, Openness: 83, Agreeableness: 83, Conscientiousness: 77 },
   holland: { Realistic: 47, Investigative: 27, Artistic: 60, Social: 80, Enterprising: 80, Conventional: 33 },
@@ -122,9 +121,9 @@ export default function AssessmentPage() {
 
   if (intakeStep === "screen1") {
     return (
-      <div className="min-h-screen bg-[#F9F7F4] flex flex-col">
-        <header className="px-6 sm:px-10 py-4 border-b border-stone-light/30">
-          <a href="/" className="font-serif text-xl font-bold text-forest hover:opacity-70 transition-opacity">Sonder</a>
+      <div className="min-h-screen bg-cream flex flex-col">
+        <header className="px-6 sm:px-10 py-4 border-b border-ash">
+          <a href="/" className="font-serif-display text-xl font-bold text-forest hover:opacity-70 transition-opacity">Sonder</a>
         </header>
         <main className="flex-1 max-w-2xl w-full mx-auto px-6 sm:px-8 py-10 pb-20">
           <IntakeScreen context={context} onChange={setContext} onContinue={handleScreen1Continue} />
@@ -139,9 +138,9 @@ export default function AssessmentPage() {
 
   if (intakeStep === "screen2") {
     return (
-      <div className="min-h-screen bg-[#F9F7F4] flex flex-col">
-        <header className="px-6 sm:px-10 py-4 border-b border-stone-light/30">
-          <a href="/" className="font-serif text-xl font-bold text-forest hover:opacity-70 transition-opacity">Sonder</a>
+      <div className="min-h-screen bg-cream flex flex-col">
+        <header className="px-6 sm:px-10 py-4 border-b border-ash">
+          <a href="/" className="font-serif-display text-xl font-bold text-forest hover:opacity-70 transition-opacity">Sonder</a>
         </header>
         <main className="flex-1 max-w-2xl w-full mx-auto px-6 sm:px-8 py-10 pb-20">
           <IntakeScreen2 context={context} onChange={setContext} onContinue={handleScreen2Continue} onBack={() => setIntakeStep("screen1")} />
@@ -155,16 +154,16 @@ export default function AssessmentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F9F7F4] flex flex-col">
+    <div className="min-h-screen bg-cream flex flex-col">
       {/* ── Sticky header + progress bar ── */}
-      <header className="sticky top-0 z-50 shrink-0 bg-[#F9F7F4] border-b border-stone-light/30">
+      <header className="sticky top-0 z-50 shrink-0 bg-cream border-b border-ash">
         <div className="px-6 sm:px-10 py-4 flex items-center justify-between">
-          <a href="/" className="font-serif text-xl font-bold text-forest hover:opacity-70 transition-opacity">Sonder</a>
-          <span className="text-sm text-stone">
+          <a href="/" className="font-serif-display text-xl font-bold text-forest hover:opacity-70 transition-opacity">Sonder</a>
+          <span className="text-xs text-moss uppercase tracking-widest">
             Section {sectionIndex + 1} of {SECTIONS.length}
           </span>
         </div>
-        <div className="h-1 w-full bg-parchment-dark">
+        <div className="h-1 w-full bg-ash">
           <div
             className="h-full bg-forest transition-all duration-500 ease-out"
             style={{ width: `${progressPct}%` }}
@@ -175,43 +174,39 @@ export default function AssessmentPage() {
       {/* ── Main content ── */}
       <main className="flex-1 max-w-2xl w-full mx-auto px-6 sm:px-8 py-8 pb-20">
         {/* Section header */}
-        <div className="mb-8">
-          <p className="text-xs font-medium text-forest tracking-widest uppercase mb-1">
+        <div className="mb-10">
+          <p className="text-xs font-medium text-moss uppercase mb-2" style={{ letterSpacing: "0.22em" }}>
             {section.framework}
           </p>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-bark mb-2">
+          <h1 className="font-serif-display text-2xl sm:text-3xl font-bold text-bark mt-1 mb-3">
             {section.title}
           </h1>
-          <p className="text-stone text-sm mb-4">{section.subtitle}</p>
+          <p className="text-bark-light text-sm mb-6 font-serif-reading leading-relaxed">{section.subtitle}</p>
 
-          {/* Section progress dots */}
-          <div className="flex items-center gap-2 mb-4">
+          {/* Section progress segments */}
+          <div className="flex items-center gap-2 mb-6">
             {SECTIONS.map((_, i) => (
               <div
                 key={i}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
+                className={`h-2 rounded-full transition-all duration-300 ${
                   i < sectionIndex
                     ? "w-6 bg-forest"
                     : i === sectionIndex
                     ? "w-8 bg-forest"
-                    : "w-4 bg-stone-light"
+                    : "w-4 bg-ash"
                 }`}
               />
             ))}
           </div>
 
-          {/* Scale legend */}
-          <div className="inline-flex items-center gap-1.5 text-xs text-stone bg-parchment-dark px-3 py-1.5 rounded">
-            <span className="font-semibold text-bark">1</span>
-            <span>= {section.scaleLow}</span>
-            <span className="text-stone-light mx-1">·</span>
-            <span className="font-semibold text-bark">5</span>
-            <span>= {section.scaleHigh}</span>
-          </div>
+          {/* Scale legend — plain text, no box */}
+          <p className="text-xs text-moss text-center" style={{ letterSpacing: "0.14em" }}>
+            1 = {section.scaleLow} &nbsp;·&nbsp; 5 = {section.scaleHigh}
+          </p>
         </div>
 
         {/* Questions */}
-        <div className="divide-y divide-stone-light/20">
+        <div className="divide-y divide-ash">
           {(() => {
             const firstUnanswered = section.questions.findIndex(
               (q) => answers[q.id] === undefined
@@ -232,10 +227,10 @@ export default function AssessmentPage() {
         </div>
 
         {/* ── Bottom nav ── */}
-        <div className="mt-10 flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-stone">
+        <div className="mt-12 flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-moss">
             {allAnswered ? (
-              <span className="text-forest-light font-medium">
+              <span className="text-forest font-medium">
                 ✓ All questions answered
               </span>
             ) : (
@@ -249,10 +244,10 @@ export default function AssessmentPage() {
           <button
             onClick={handleNext}
             disabled={!allAnswered}
-            className={`w-full sm:w-auto px-8 py-4 rounded-full font-medium text-base tracking-wide transition-all duration-200 ${
+            className={`w-full sm:w-auto px-10 py-3.5 rounded-full font-medium text-base tracking-wide transition-colors duration-300 ${
               allAnswered
-                ? "bg-forest text-parchment hover:bg-forest-light cursor-pointer"
-                : "bg-stone-light/40 text-stone cursor-not-allowed"
+                ? "border border-forest text-forest hover:bg-forest/10 cursor-pointer"
+                : "border border-ash text-moss cursor-not-allowed"
             }`}
           >
             {isLastSection ? "See My Results" : "Next Section →"}
@@ -271,7 +266,7 @@ export default function AssessmentPage() {
   );
 }
 
-// ─── Intake Screen ────────────────────────────────────────────────────────────
+// ─── Intake Screen 1 ──────────────────────────────────────────────────────────
 
 function IntakeScreen({
   context,
@@ -293,19 +288,19 @@ function IntakeScreen({
 
   return (
     <div>
-      <div className="mb-10">
-        <p className="text-xs font-medium text-forest tracking-widest uppercase mb-1">
+      <div className="mb-12">
+        <p className="text-xs font-medium text-moss uppercase mb-3" style={{ letterSpacing: "0.22em" }}>
           The first steps
         </p>
-        <h1 className="font-serif text-3xl sm:text-4xl font-bold text-bark mb-2" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
+        <h1 className="font-serif-display text-3xl sm:text-4xl font-bold text-bark mt-2 mb-5">
           Tell me about your life.
         </h1>
-        <p className="text-bark-light text-lg sm:text-xl">
+        <p className="text-bark-light text-lg sm:text-xl font-serif-reading leading-relaxed">
           I&rsquo;ll use this to write for you, not someone like you.
         </p>
       </div>
 
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-10">
         {/* Age range */}
         <IntakeRadioGroup
           label="How old are you?"
@@ -344,7 +339,7 @@ function IntakeScreen({
             value={context.workField}
             onChange={(e) => onChange({ ...context, workField: e.target.value })}
             placeholder="e.g. finance, education, healthcare..."
-            className="w-full bg-transparent border-0 border-b border-stone-light/60 px-0 py-2.5 text-sm text-bark placeholder:text-stone-light focus:outline-none focus:border-forest/60 transition-colors"
+            className="w-full bg-transparent border-0 border-b border-ash px-0 py-2.5 text-base text-bark placeholder:text-moss focus:outline-none focus:border-forest transition-colors font-serif-reading"
           />
         </div>
 
@@ -359,7 +354,7 @@ function IntakeScreen({
             value={context.hobby}
             onChange={(e) => onChange({ ...context, hobby: e.target.value })}
             placeholder="e.g. chess, woodworking, distance running..."
-            className="w-full block mb-0 bg-transparent border-0 border-b border-stone-light/60 px-0 pt-2.5 pb-0 text-sm text-bark placeholder:text-stone-light focus:outline-none focus:border-forest/60 transition-colors resize-none"
+            className="w-full block bg-transparent border-0 border-b border-ash px-0 pt-2.5 pb-0 text-base text-bark placeholder:text-moss focus:outline-none focus:border-forest transition-colors resize-none font-serif-reading"
           />
         </div>
 
@@ -367,28 +362,22 @@ function IntakeScreen({
         <div>
           <p className="text-sm font-medium text-bark mb-3">
             What do you most want clarity on?{" "}
-            <span className="font-normal text-forest"> *</span>
+            <span className="font-normal" style={{ color: "#A0524D" }}> *</span>
           </p>
           <div className="flex flex-wrap gap-2">
             {["My career direction", "My relationships", "Who I am as a person"].map((opt) => {
               const selected = claritySelections.includes(opt);
               return (
-                <button
+                <IntakeChip
                   key={opt}
-                  type="button"
+                  label={opt}
+                  selected={selected}
                   onClick={() =>
                     setClaritySelections((prev) =>
                       prev.includes(opt) ? prev.filter((o) => o !== opt) : [...prev, opt]
                     )
                   }
-                  className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-150 select-none ${
-                    selected
-                      ? "bg-sage/25 text-forest border border-sage/40 shadow-sm"
-                      : "bg-transparent border border-stone-light/60 text-bark-light hover:border-forest/50 hover:text-forest"
-                  }`}
-                >
-                  {opt}
-                </button>
+                />
               );
             })}
           </div>
@@ -396,7 +385,7 @@ function IntakeScreen({
       </div>
 
       {/* Disclaimer checkbox */}
-      <label className="mt-8 flex items-start gap-3 cursor-pointer">
+      <label className="mt-10 flex items-start gap-3 cursor-pointer">
         <div className="relative flex-shrink-0 mt-0.5">
           <input
             type="checkbox"
@@ -407,8 +396,8 @@ function IntakeScreen({
           <div
             className="w-4 h-4 rounded border transition-colors duration-150 flex items-center justify-center"
             style={{
-              borderColor: agreed ? "#3D5A3E" : "#B8B2A8",
-              backgroundColor: agreed ? "#3D5A3E" : "transparent",
+              borderColor: agreed ? "#5A7250" : "#E8E3DC",
+              backgroundColor: agreed ? "#5A7250" : "transparent",
             }}
           >
             {agreed && (
@@ -418,22 +407,22 @@ function IntakeScreen({
             )}
           </div>
         </div>
-        <span className="text-xs text-stone leading-relaxed">
+        <span className="text-xs text-moss leading-relaxed">
           I understand that Sonder is a self-reflection tool and not a substitute for professional mental health care. I am 18 or older.
         </span>
       </label>
 
-      <div className="mt-6 flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
-        <p className="text-xs text-stone max-w-xs leading-relaxed text-center sm:text-left">
+      <div className="mt-12 flex flex-col items-center gap-5 text-center">
+        <p className="text-sm text-moss italic font-serif-reading leading-relaxed">
           Everything here is optional. Your answers never leave your browser.
         </p>
         <button
           onClick={handleContinue}
           disabled={!canContinue}
-          className={`w-full sm:w-auto px-7 py-3 rounded-full font-medium text-base tracking-wide transition-all duration-200 ${
+          className={`w-full sm:w-auto px-10 py-3.5 rounded-full font-medium text-base tracking-wide transition-colors duration-300 ${
             canContinue
-              ? "bg-forest text-parchment hover:bg-forest-light cursor-pointer"
-              : "bg-stone-light/40 text-stone cursor-not-allowed"
+              ? "border border-forest text-forest hover:bg-forest/10 cursor-pointer"
+              : "border border-ash text-moss cursor-not-allowed"
           }`}
         >
           Next →
@@ -443,7 +432,7 @@ function IntakeScreen({
   );
 }
 
-// ─── Intake Screen 2 ─────────────────────────────────────────────────────────
+// ─── Intake Screen 2 ──────────────────────────────────────────────────────────
 
 function IntakeScreen2({
   context,
@@ -462,23 +451,24 @@ function IntakeScreen2({
     <div>
       <button
         onClick={onBack}
-        className="text-xs text-stone hover:text-bark transition-colors mb-8 flex items-center gap-1"
+        className="text-xs text-moss hover:text-bark transition-colors mb-8 flex items-center gap-1"
       >
         ← Back
       </button>
-      <div className="mb-10">
-        <p className="text-xs font-medium text-forest tracking-widest uppercase mb-1">
+
+      <div className="mb-12">
+        <p className="text-xs font-medium text-moss uppercase mb-3" style={{ letterSpacing: "0.22em" }}>
           Going inward
         </p>
-        <h1 className="font-serif text-3xl sm:text-4xl font-bold text-bark mb-2" style={{ fontFamily: "var(--font-playfair), Georgia, serif" }}>
+        <h1 className="font-serif-display text-3xl sm:text-4xl font-bold text-bark mt-2 mb-5">
           Now tell me about your inner world.
         </h1>
-        <p className="text-stone text-sm">
+        <p className="text-bark-light text-lg sm:text-xl font-serif-reading leading-relaxed">
           Answer only what feels honest. The report becomes more precise with each answer — but it will be good no matter what you share.
         </p>
       </div>
 
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-10">
         {/* Hardest thing */}
         <div>
           <p className="text-sm font-medium text-bark mb-3">
@@ -490,7 +480,7 @@ function IntakeScreen2({
             value={context.hardestThing}
             onChange={(e) => onChange({ ...context, hardestThing: e.target.value })}
             placeholder="A career transition, a relationship, a loss, a decision..."
-            className="w-full bg-transparent border-0 border-b border-stone-light/60 px-0 py-2.5 text-sm text-bark placeholder:text-stone-light focus:outline-none focus:border-forest/60 transition-colors"
+            className="w-full bg-transparent border-0 border-b border-ash px-0 py-2.5 text-base text-bark placeholder:text-moss focus:outline-none focus:border-forest transition-colors font-serif-reading"
           />
         </div>
 
@@ -505,7 +495,7 @@ function IntakeScreen2({
             value={context.socialPerception}
             onChange={(e) => onChange({ ...context, socialPerception: e.target.value })}
             placeholder="They say I'm..."
-            className="w-full bg-transparent border-0 border-b border-stone-light/60 px-0 py-2.5 text-sm text-bark placeholder:text-stone-light focus:outline-none focus:border-forest/60 transition-colors"
+            className="w-full bg-transparent border-0 border-b border-ash px-0 py-2.5 text-base text-bark placeholder:text-moss focus:outline-none focus:border-forest transition-colors font-serif-reading"
           />
         </div>
 
@@ -520,7 +510,7 @@ function IntakeScreen2({
             value={context.tooMuch}
             onChange={(e) => onChange({ ...context, tooMuch: e.target.value })}
             placeholder="My intensity, my need to help, my attention to detail..."
-            className="w-full bg-transparent border-0 border-b border-stone-light/60 px-0 py-2.5 text-sm text-bark placeholder:text-stone-light focus:outline-none focus:border-forest/60 transition-colors"
+            className="w-full bg-transparent border-0 border-b border-ash px-0 py-2.5 text-base text-bark placeholder:text-moss focus:outline-none focus:border-forest transition-colors font-serif-reading"
           />
         </div>
 
@@ -554,17 +544,17 @@ function IntakeScreen2({
         />
       </div>
 
-      <div className="mt-10 flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
-        <p className="text-xs text-stone max-w-xs leading-relaxed text-center sm:text-left">
+      <div className="mt-12 flex flex-col items-center gap-5 text-center">
+        <p className="text-sm text-moss italic font-serif-reading leading-relaxed">
           Everything here is optional. Your answers never leave your browser.
         </p>
         <button
           onClick={onContinue}
           disabled={!canContinue}
-          className={`w-full sm:w-auto px-7 py-3 rounded-full font-medium text-base tracking-wide transition-all duration-200 ${
+          className={`w-full sm:w-auto px-10 py-3.5 rounded-full font-medium text-base tracking-wide transition-colors duration-300 ${
             canContinue
-              ? "bg-forest text-parchment hover:bg-forest-light cursor-pointer"
-              : "bg-stone-light/40 text-stone cursor-not-allowed"
+              ? "border border-forest text-forest hover:bg-forest/10 cursor-pointer"
+              : "border border-ash text-moss cursor-not-allowed"
           }`}
         >
           Continue to Assessment →
@@ -577,11 +567,46 @@ function IntakeScreen2({
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function joinClarityGoals(goals: string[]): string {
-  // "My career direction" → "career direction", "Who I am as a person" → "who I am as a person"
   const normalized = goals.map((g) => g.replace(/^My /, "").toLowerCase());
   if (normalized.length === 1) return normalized[0];
   if (normalized.length === 2) return `${normalized[0]} and ${normalized[1]}`;
   return `${normalized.slice(0, -1).join(", ")}, and ${normalized[normalized.length - 1]}`;
+}
+
+// ─── Intake Chip ──────────────────────────────────────────────────────────────
+
+function IntakeChip({
+  label,
+  selected,
+  onClick,
+}: {
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="px-5 py-2 rounded-full text-sm select-none font-serif-reading"
+      style={{
+        border: `1px solid ${selected ? "#5A7250" : hovered ? "#8A9383" : "#E8E3DC"}`,
+        background: selected
+          ? "rgba(90,114,80,0.1)"
+          : hovered
+          ? "rgba(232,227,220,0.4)"
+          : "transparent",
+        color: selected ? "#5A7250" : "#5C524B",
+        transition: "border-color 300ms ease, background 300ms ease, color 300ms ease",
+        cursor: "pointer",
+      }}
+    >
+      {label}
+    </button>
+  );
 }
 
 // ─── Intake Radio Group ───────────────────────────────────────────────────────
@@ -591,7 +616,7 @@ function IntakeRadioGroup({
   options,
   value,
   onChange,
-  optional,
+  optional: _optional,
   required,
 }: {
   label: string;
@@ -605,34 +630,21 @@ function IntakeRadioGroup({
     <div>
       <p className="text-sm font-medium text-bark mb-3">
         {label}{" "}
-        {required && <span className="font-normal text-forest"> *</span>}
+        {required && <span className="font-normal" style={{ color: "#A0524D" }}> *</span>}
       </p>
       <div className="flex flex-wrap gap-2">
-        {options.map((opt) => {
-          const selected = value === opt;
-          return (
-            <button
-              key={opt}
-              type="button"
-              onClick={() => onChange(opt)}
-              className={`px-5 py-2 rounded-full text-sm font-medium transition-all duration-150 select-none ${
-                selected
-                  ? "bg-sage/25 text-forest border border-sage/40 shadow-sm"
-                  : "bg-transparent border border-stone-light/60 text-bark-light hover:border-forest/50 hover:text-forest"
-              }`}
-            >
-              {opt}
-            </button>
-          );
-        })}
+        {options.map((opt) => (
+          <IntakeChip
+            key={opt}
+            label={opt}
+            selected={value === opt}
+            onClick={() => onChange(opt)}
+          />
+        ))}
       </div>
     </div>
   );
 }
-
-// ─── Scale color config (per position 1–5) ───────────────────────────────────
-
-const SCALE_COLOR = { border: "#2D4A2E", fill: "#2D4A2E", hoverBg: "rgba(45,74,46,0.10)" };
 
 // ─── Likert Circle Button ─────────────────────────────────────────────────────
 
@@ -659,24 +671,26 @@ function LikertCircle({
       aria-label={ariaLabel}
       className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 select-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
       style={{
-        border: `1.5px solid ${SCALE_COLOR.border}`,
+        border: `1px solid ${isSelected ? "#5A7250" : hovered ? "#8A9383" : "#E8E3DC"}`,
         backgroundColor: isSelected
-          ? SCALE_COLOR.fill
+          ? "#5A7250"
           : hovered
-          ? SCALE_COLOR.hoverBg
+          ? "rgba(232,227,220,0.5)"
           : "transparent",
-        transform: hovered && !isSelected ? "scale(1.1)" : "scale(1)",
-        transition: "background-color 150ms ease, transform 150ms ease",
+        transition: "background-color 300ms ease, border-color 300ms ease",
         cursor: "pointer",
-        outlineColor: SCALE_COLOR.border,
+        outlineColor: "#5A7250",
       }}
     >
       <span
         style={{
+          fontFamily: isSelected
+            ? "var(--font-playfair), Georgia, serif"
+            : "var(--font-eb-garamond), Georgia, serif",
           fontSize: "13px",
-          fontWeight: 600,
+          fontWeight: isSelected ? 600 : 400,
           lineHeight: 1,
-          color: isSelected ? "white" : SCALE_COLOR.border,
+          color: isSelected ? "#F5F0E8" : "#5C524B",
           userSelect: "none",
         }}
       >
@@ -711,11 +725,11 @@ function QuestionItem({
 
   return (
     <div
-      className="py-6 transition-opacity duration-300"
+      className="py-8 transition-opacity duration-300"
       style={{ opacity: dimmed ? 0.38 : 1 }}
     >
       <p
-        className={`text-bark leading-snug mb-5 text-base sm:text-[1.0625rem] transition-all duration-200 ${
+        className={`text-bark leading-relaxed mb-6 text-[1.0625rem] sm:text-lg font-serif-reading transition-all duration-200 ${
           isAnswered ? "font-medium" : "font-normal"
         }`}
       >
@@ -728,8 +742,11 @@ function QuestionItem({
         aria-label={`Answer: ${text}`}
       >
         {/* Disagree label */}
-        <span className="text-[10px] sm:text-xs text-stone whitespace-nowrap leading-tight">
-          Disagree
+        <span
+          className="text-[10px] sm:text-xs text-moss whitespace-nowrap leading-tight uppercase"
+          style={{ letterSpacing: "0.1em" }}
+        >
+          {scaleLow.split(" ")[0] || "Disagree"}
         </span>
 
         {/* Circle buttons */}
@@ -748,8 +765,11 @@ function QuestionItem({
         </div>
 
         {/* Agree label */}
-        <span className="text-[10px] sm:text-xs text-stone whitespace-nowrap leading-tight">
-          Agree
+        <span
+          className="text-[10px] sm:text-xs text-moss whitespace-nowrap leading-tight uppercase"
+          style={{ letterSpacing: "0.1em" }}
+        >
+          {scaleHigh.split(" ")[0] || "Agree"}
         </span>
       </div>
     </div>
