@@ -116,11 +116,33 @@ FORMAT FOR SECTION 9 — use this exact structure so it renders correctly as an 
 
 End Section 9 with these exact words on their own line, as the final words of the entire report: 'You are sondering. That is enough.' Do not modify these words. Do not add anything after them. This is the closing breath of the report.
 
-Return ONLY a JSON object with this exact structure, no other text:
-{"sections": [{"title": "Who You Are", "content": "..."}, {"title": "How You Work", "content": "..."}, {"title": "How You Love", "content": "..."}, {"title": "What Drives You", "content": "..."}, {"title": "Your Growth Edges", "content": "..."}, {"title": "Your Path Forward", "content": "..."}, {"title": "The Sonder Lens", "content": "..."}, {"title": "The Whole Picture", "content": "..."}, {"title": "Your Next 90 Days", "content": "..."}]}`;
+Use the return_report tool to return your response. Do not output any text outside the tool call.`;
 
-// Max parse attempts before surfacing an error to the client.
-// Parse failures are intermittent — a second call almost always succeeds.
+// Tool schema — forces the API to serialize output, eliminating JSON parse failures
+const REPORT_TOOL: Anthropic.Tool = {
+  name: "return_report",
+  description: "Return the complete Sonder report with exactly 9 sections.",
+  input_schema: {
+    type: "object",
+    properties: {
+      sections: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            title:   { type: "string" },
+            content: { type: "string" },
+          },
+          required: ["title", "content"],
+        },
+        minItems: 9,
+        maxItems: 9,
+      },
+    },
+    required: ["sections"],
+  },
+};
+
 const MAX_ATTEMPTS = 2;
 
 export async function POST(request: NextRequest) {
@@ -140,23 +162,24 @@ export async function POST(request: NextRequest) {
     ? JSON.stringify({ scores, context })
     : JSON.stringify({ scores });
 
-  const userContent = `${dataPayload}\n\nRespond with valid JSON only. Do not wrap the response in markdown code fences. Do not include any preamble, explanation, or trailing commentary. Your entire response must be a single parseable JSON object and nothing else.`;
+  const userContent = `${dataPayload}\n\nGenerate the complete Sonder report using the return_report tool.`;
 
   let lastErrorMessage = "Something went wrong. Please try again.";
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    // ── Claude API call (streaming keeps the connection alive for long completions) ──
+    // ── Streaming keeps the Vercel connection alive over the ~3min generation ──
     let message: Awaited<ReturnType<typeof client.messages.stream.prototype.finalMessage>>;
     try {
       const stream = client.messages.stream({
         model: "claude-sonnet-4-20250514",
-        max_tokens: 14000,
+        max_tokens: 16000,
         system: SYSTEM_PROMPT,
+        tools: [REPORT_TOOL],
+        tool_choice: { type: "tool", name: "return_report" },
         messages: [{ role: "user", content: userContent }],
       });
       message = await stream.finalMessage();
     } catch (error) {
-      // API-level errors (auth, rate limit, billing) are not retry-able
       console.error(`[generate-report] API error on attempt ${attempt}:`, error);
       if (error instanceof Anthropic.APIError) {
         if (error.status === 402) {
@@ -185,108 +208,39 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Truncation check ──────────────────────────────────────────────────────
-    if (message.stop_reason === "max_tokens") {
+    if (message.stop_reason === "tool_use" || message.stop_reason === "end_turn") {
+      // expected — fall through to extraction
+    } else if (message.stop_reason === "max_tokens") {
       console.warn(`[generate-report] attempt ${attempt}: response truncated (max_tokens)`);
       lastErrorMessage = "Report was cut short — please try again";
       continue;
     }
 
-    // ── Extract text block ────────────────────────────────────────────────────
-    const textBlock = message.content.find((b: { type: string }) => b.type === "text");
-    if (!textBlock || textBlock.type !== "text") {
-      console.warn(`[generate-report] attempt ${attempt}: no text block in response`);
-      lastErrorMessage = "No text content in response — please try again";
+    // ── Extract tool_use block ────────────────────────────────────────────────
+    const toolUse = message.content.find((b: { type: string }) => b.type === "tool_use");
+    if (!toolUse || toolUse.type !== "tool_use") {
+      console.warn(`[generate-report] attempt ${attempt}: no tool_use block in response`);
+      lastErrorMessage = "Report generation failed — please try again";
       continue;
     }
 
-    const text = textBlock.text;
-    // Always log first 500 chars so parse failures are diagnosable in production logs
-    console.log(`[generate-report] attempt ${attempt} raw (first 500):`, text.slice(0, 500));
-
-    // ── JSON extraction ───────────────────────────────────────────────────────
-    const raw = extractJSONObject(text, "sections");
-
-    if (!raw) {
-      console.warn(`[generate-report] attempt ${attempt}: no JSON found. Full response:`, text);
-      lastErrorMessage = "Failed to parse report response — please try again";
-      continue;
-    }
-
-    // ── Parse + validate ──────────────────────────────────────────────────────
-    try {
-      const parsed = JSON.parse(raw);
-
-      if (!Array.isArray(parsed.sections) || parsed.sections.length !== 9) {
-        console.warn(
-          `[generate-report] attempt ${attempt}: invalid structure — sections:`,
-          parsed.sections?.length ?? "missing",
-          "Raw slice:", raw.slice(0, 300)
-        );
-        lastErrorMessage = "Report format error — please try again";
-        continue;
-      }
-
-      if (attempt > 1) {
-        console.log(`[generate-report] succeeded on attempt ${attempt}`);
-      }
-      return Response.json(parsed);
-    } catch (parseErr) {
+    // ── Validate structure ────────────────────────────────────────────────────
+    const data = toolUse.input as { sections?: { title: string; content: string }[] };
+    if (!Array.isArray(data.sections) || data.sections.length !== 9) {
       console.warn(
-        `[generate-report] attempt ${attempt}: JSON.parse failed:`,
-        parseErr,
-        "\nRaw slice:", raw.slice(0, 1000)
+        `[generate-report] attempt ${attempt}: invalid structure — sections:`,
+        data.sections?.length ?? "missing"
       );
-      lastErrorMessage = "Failed to parse report response — please try again";
+      lastErrorMessage = "Report format error — please try again";
       continue;
     }
+
+    if (attempt > 1) {
+      console.log(`[generate-report] succeeded on attempt ${attempt}`);
+    }
+    return Response.json(data);
   }
 
-  // All attempts exhausted
   console.error(`[generate-report] all ${MAX_ATTEMPTS} attempts failed. Last error: ${lastErrorMessage}`);
   return Response.json({ error: lastErrorMessage }, { status: 500 });
-}
-
-/**
- * Extracts the first complete JSON object containing `rootKey` from arbitrary text.
- * Three strategies in order of precision:
- *   1. Fast path — text is already clean JSON
- *   2. Key-based — find rootKey, walk back to opening {, count brace depth to closing }
- *   3. Fence strip — strip markdown fences, return remainder if it starts with {
- *   4. Brute-force — slice from first { to last }, attempt parse
- */
-function extractJSONObject(text: string, rootKey: string): string | null {
-  // Strategy 1: text is already clean JSON
-  const trimmed = text.trim();
-  if (trimmed.startsWith("{")) return trimmed;
-
-  // Strategy 2: find root key, walk back to opening {, brace-count forward
-  const keyIdx = text.indexOf(`"${rootKey}"`);
-  if (keyIdx !== -1) {
-    for (let i = keyIdx - 1; i >= 0; i--) {
-      if (text[i] === "{") {
-        let depth = 0;
-        for (let j = i; j < text.length; j++) {
-          if (text[j] === "{") depth++;
-          else if (text[j] === "}") {
-            depth--;
-            if (depth === 0) return text.slice(i, j + 1);
-          }
-        }
-        break; // unbalanced — fall through
-      }
-    }
-  }
-
-  // Strategy 3: strip markdown fences
-  const stripped = trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
-  if (stripped.startsWith("{")) return stripped;
-
-  // Strategy 4: brute-force — first { to last }
-  const firstBrace = text.indexOf("{");
-  const lastBrace = text.lastIndexOf("}");
-  if (firstBrace !== -1 && lastBrace > firstBrace) {
-    return text.slice(firstBrace, lastBrace + 1);
-  }
-
-  return null;
 }

@@ -279,7 +279,7 @@ function IntakeScreen({
 }) {
   const [agreed, setAgreed] = useState(false);
   const [claritySelections, setClaritySelections] = useState<string[]>([]);
-  const canContinue = claritySelections.length > 0 && agreed;
+  const canContinue = claritySelections.length > 0;
 
   function handleContinue() {
     onChange({ ...context, clarityGoal: joinClarityGoals(claritySelections) });
