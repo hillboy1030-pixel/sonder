@@ -142,19 +142,11 @@ export default function HomePage() {
             margin: "0 auto",
           }}
         >
-          {/* Definition line */}
-          <p
+          {/* Definition — floating cream text, no box */}
+          <div
             style={{
-              fontSize: "clamp(11px, 1.2vw, 13px)",
-              letterSpacing: "0.13em",
-              color: "rgba(255,255,255,0.65)",
-              textTransform: "uppercase",
-              marginBottom: "32px",
-              background: "rgba(0,0,0,0.35)",
-              backdropFilter: "blur(4px)",
-              WebkitBackdropFilter: "blur(4px)",
-              padding: "8px 16px",
-              borderRadius: "4px",
+              marginBottom: "44px",
+              textAlign: "center",
               animationName: "fadeUp",
               animationDuration: "0.9s",
               animationTimingFunction: "ease-out",
@@ -162,18 +154,43 @@ export default function HomePage() {
               animationFillMode: "both",
             }}
           >
-            sonder (n.) — the realization that each passerby has a life as vivid and complex as your own.
-          </p>
+            <p
+              style={{
+                fontSize: "clamp(9px, 0.9vw, 11px)",
+                letterSpacing: "0.28em",
+                color: "rgba(249,247,244,0.65)",
+                textTransform: "uppercase",
+                fontWeight: 600,
+                marginBottom: "12px",
+                fontFamily: "var(--font-inter), system-ui, sans-serif",
+              }}
+            >
+              Sonder (n.)
+            </p>
+            <p
+              style={{
+                fontFamily: "var(--font-eb-garamond), Georgia, serif",
+                fontStyle: "italic",
+                fontSize: "clamp(15px, 1.6vw, 19px)",
+                color: "rgba(249,247,244,0.7)",
+                lineHeight: 1.6,
+                maxWidth: "460px",
+                margin: "0 auto",
+              }}
+            >
+              the realization that each passerby has a life as vivid and complex as your own.
+            </p>
+          </div>
 
           {/* Headline */}
           <h1
             style={{
               fontFamily: "var(--font-playfair), Georgia, serif",
               fontSize: "clamp(28px, 4.8vw, 62px)",
-              fontWeight: 700,
-              color: "white",
+              fontWeight: 400,
+              color: "rgba(249,247,244,0.97)",
               lineHeight: 1.18,
-              marginBottom: "28px",
+              marginBottom: "40px",
               animationName: "fadeUp",
               animationDuration: "0.9s",
               animationTimingFunction: "ease-out",
@@ -187,10 +204,10 @@ export default function HomePage() {
           {/* Subheadline */}
           <p
             style={{
-              fontSize: "clamp(12px, 1.2vw, 14px)",
-              color: "rgba(255,255,255,0.68)",
-              lineHeight: 1.65,
-              marginBottom: "44px",
+              fontSize: "clamp(13px, 1.3vw, 15px)",
+              color: "rgba(249,247,244,0.82)",
+              lineHeight: 1.7,
+              marginBottom: "52px",
               maxWidth: "520px",
               animationName: "fadeUp",
               animationDuration: "0.9s",
@@ -247,7 +264,7 @@ export default function HomePage() {
       </section>
 
       {/* ── How It Works ── */}
-      <section style={{ backgroundColor: "#F9F7F4", padding: "100px 24px 80px" }}>
+      <section style={{ background: "linear-gradient(to bottom, #F9F7F4 0%, #F3EFE9 100%)", padding: "100px 24px 80px" }}>
         <div ref={steps.ref} style={{ maxWidth: "680px", margin: "0 auto" }}>
 
           {/* Section heading */}
@@ -257,7 +274,7 @@ export default function HomePage() {
               fontSize: "clamp(24px, 3.5vw, 34px)",
               fontWeight: 600,
               textAlign: "center",
-              color: "#2A2620",
+              color: "#3C3530",
               marginBottom: "64px",
               opacity: steps.visible ? 1 : 0,
               transform: steps.visible ? "translateY(0)" : "translateY(20px)",
@@ -285,9 +302,9 @@ export default function HomePage() {
                 <span
                   style={{
                     fontFamily: "var(--font-playfair), Georgia, serif",
-                    fontSize: "clamp(36px, 4vw, 52px)",
-                    fontWeight: 700,
-                    color: step.comingSoon ? "rgba(61,90,62,0.14)" : "rgba(61,90,62,0.28)",
+                    fontSize: "clamp(44px, 5vw, 68px)",
+                    fontWeight: 400,
+                    color: step.comingSoon ? "rgba(138,147,131,0.2)" : "rgba(138,147,131,0.45)",
                     lineHeight: 1,
                     paddingTop: "2px",
                   }}
@@ -301,7 +318,7 @@ export default function HomePage() {
                         fontSize: "10px",
                         fontStyle: "italic",
                         letterSpacing: "0.1em",
-                        color: "#3D5A3E",
+                        color: "#5A7250",
                         opacity: 0.6,
                         marginBottom: "8px",
                         textTransform: "uppercase",
@@ -315,19 +332,19 @@ export default function HomePage() {
                       fontFamily: "var(--font-playfair), Georgia, serif",
                       fontSize: "clamp(17px, 2vw, 21px)",
                       fontWeight: 600,
-                      color: step.comingSoon ? "#4A4540" : "#2A2620",
+                      color: step.comingSoon ? "#5C524B" : "#3C3530",
                       marginBottom: "10px",
                     }}
                   >
                     {step.title}
                   </h3>
-                  <p style={{ fontSize: "15px", color: "#8A8278", lineHeight: 1.7 }}>
+                  <p style={{ fontFamily: "var(--font-eb-garamond), Georgia, serif", fontSize: "17px", color: "#5C524B", lineHeight: 1.8 }}>
                     {step.description}
                   </p>
                 </div>
               </div>
               {i < STEPS.length - 1 && (
-                <div style={{ height: "1px", background: "rgba(184,178,168,0.35)" }} />
+                <div style={{ height: "1px", background: "#E8E3DC" }} />
               )}
             </div>
           ))}
@@ -339,7 +356,7 @@ export default function HomePage() {
         ref={footer.ref}
         style={{
           backgroundColor: "#F9F7F4",
-          borderTop: "1px solid rgba(184,178,168,0.35)",
+          borderTop: "1px solid #E8E3DC",
           padding: "44px 24px",
           textAlign: "center",
           opacity: footer.visible ? 1 : 0,
@@ -349,9 +366,9 @@ export default function HomePage() {
         <p
           style={{
             fontSize: "10px",
-            letterSpacing: "0.12em",
+            letterSpacing: "0.2em",
             textTransform: "uppercase",
-            color: "#B8B2A8",
+            color: "#8A9383",
             marginBottom: "14px",
           }}
         >
@@ -360,23 +377,23 @@ export default function HomePage() {
         <p
           style={{
             fontSize: "13px",
-            color: "#8A8278",
+            color: "#8A9383",
             maxWidth: "400px",
             margin: "0 auto",
-            lineHeight: 1.65,
+            lineHeight: 1.7,
           }}
         >
           Your privacy is protected — we never store your responses or results on our servers.
         </p>
         <div style={{ marginTop: "20px", display: "flex", gap: "24px", justifyContent: "center" }}>
-          <a href="/terms" style={{ fontSize: "12px", color: "#B8B2A8", textDecoration: "none" }}
-            onMouseEnter={e => (e.currentTarget.style.color = "#8A8278")}
-            onMouseLeave={e => (e.currentTarget.style.color = "#B8B2A8")}>
+          <a href="/terms" style={{ fontSize: "12px", color: "#8A9383", textDecoration: "none" }}
+            onMouseEnter={e => (e.currentTarget.style.color = "#5C524B")}
+            onMouseLeave={e => (e.currentTarget.style.color = "#8A9383")}>
             Terms of Service
           </a>
-          <a href="/privacy" style={{ fontSize: "12px", color: "#B8B2A8", textDecoration: "none" }}
-            onMouseEnter={e => (e.currentTarget.style.color = "#8A8278")}
-            onMouseLeave={e => (e.currentTarget.style.color = "#B8B2A8")}>
+          <a href="/privacy" style={{ fontSize: "12px", color: "#8A9383", textDecoration: "none" }}
+            onMouseEnter={e => (e.currentTarget.style.color = "#5C524B")}
+            onMouseLeave={e => (e.currentTarget.style.color = "#8A9383")}>
             Privacy Policy
           </a>
         </div>
@@ -396,22 +413,16 @@ function HeroButton() {
       onMouseLeave={() => setHovered(false)}
       style={{
         display: "inline-block",
-        padding: "20px 64px",
+        padding: "20px 88px",
         borderRadius: "9999px",
-        background: hovered ? "rgba(255,255,255,0.96)" : "rgba(255,255,255,0.16)",
-        border: "1.5px solid rgba(255,255,255,0.65)",
-        color: hovered ? "#3D5A3E" : "white",
-        fontWeight: 600,
+        background: hovered ? "rgba(249,247,244,0.14)" : "transparent",
+        border: "1px solid rgba(249,247,244,0.6)",
+        color: "rgba(249,247,244,0.95)",
+        fontWeight: 400,
         fontSize: "18px",
-        letterSpacing: "0.04em",
+        letterSpacing: "0.1em",
         textDecoration: "none",
-        backdropFilter: "blur(10px)",
-        WebkitBackdropFilter: "blur(10px)",
-        transform: hovered ? "translateY(-2px)" : "translateY(0)",
-        transition: "background 0.22s, color 0.22s, transform 0.22s",
-        boxShadow: hovered
-          ? "0 8px 30px rgba(0,0,0,0.18)"
-          : "0 2px 12px rgba(0,0,0,0.12)",
+        transition: "background 0.3s ease",
       }}
     >
       Begin

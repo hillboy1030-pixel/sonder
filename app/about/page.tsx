@@ -4,17 +4,17 @@ export const dynamic = "force-dynamic";
 
 export default function AboutPage() {
   return (
-    <div style={{ backgroundColor: "#F9F7F4", color: "#2A2620", minHeight: "100vh" }}>
+    <div style={{ backgroundColor: "#F9F7F4", color: "#3C3530", minHeight: "100vh" }}>
 
       {/* Nav */}
-      <header style={{ padding: "28px 40px", borderBottom: "1px solid rgba(184,178,168,0.28)" }}>
+      <header style={{ padding: "28px 40px", borderBottom: "1px solid #E8E3DC" }}>
         <a
           href="/"
           style={{
             fontFamily: "var(--font-playfair), Georgia, serif",
             fontSize: "28px",
             fontWeight: 700,
-            color: "#3D5A3E",
+            color: "#5A7250",
             letterSpacing: "-0.3px",
             textDecoration: "none",
           }}
@@ -23,7 +23,21 @@ export default function AboutPage() {
         </a>
       </header>
 
-      <main style={{ maxWidth: "620px", margin: "0 auto", padding: "72px 24px 96px" }}>
+      <main style={{ maxWidth: "580px", margin: "0 auto", padding: "72px 24px 96px" }}>
+
+        {/* Kicker */}
+        <p
+          style={{
+            fontSize: "10px",
+            letterSpacing: "0.2em",
+            textTransform: "uppercase",
+            color: "#8A9383",
+            fontStyle: "italic",
+            marginBottom: "28px",
+          }}
+        >
+          A note from the builder
+        </p>
 
         {/* Heading */}
         <h1
@@ -31,8 +45,8 @@ export default function AboutPage() {
             fontFamily: "var(--font-playfair), Georgia, serif",
             fontSize: "clamp(28px, 4vw, 40px)",
             fontWeight: 700,
-            color: "#2A2620",
-            marginBottom: "48px",
+            color: "#3C3530",
+            marginBottom: "56px",
             lineHeight: 1.2,
           }}
         >
@@ -40,12 +54,13 @@ export default function AboutPage() {
         </h1>
 
         {/* Body */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "22px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
           <p
             style={{
-              fontSize: "clamp(15px, 1.7vw, 17px)",
-              lineHeight: 1.75,
-              color: "#4A4540",
+              fontFamily: "var(--font-eb-garamond), Georgia, serif",
+              fontSize: "clamp(17px, 1.9vw, 20px)",
+              lineHeight: 1.8,
+              color: "#3C3530",
             }}
           >
             Sonder was built by someone who has spent years thinking about why people make the
@@ -58,9 +73,10 @@ export default function AboutPage() {
 
           <p
             style={{
-              fontSize: "clamp(15px, 1.7vw, 17px)",
-              lineHeight: 1.75,
-              color: "#4A4540",
+              fontFamily: "var(--font-eb-garamond), Georgia, serif",
+              fontSize: "clamp(17px, 1.9vw, 20px)",
+              lineHeight: 1.8,
+              color: "#3C3530",
             }}
           >
             Sonder exists because self-understanding shouldn&rsquo;t cost hundreds of dollars or
@@ -70,9 +86,10 @@ export default function AboutPage() {
 
           <p
             style={{
-              fontSize: "clamp(15px, 1.7vw, 17px)",
-              lineHeight: 1.75,
-              color: "#4A4540",
+              fontFamily: "var(--font-eb-garamond), Georgia, serif",
+              fontSize: "clamp(17px, 1.9vw, 20px)",
+              lineHeight: 1.8,
+              color: "#3C3530",
             }}
           >
             The report you receive is built on four validated research frameworks — the Big Five,
@@ -83,26 +100,27 @@ export default function AboutPage() {
         </div>
 
         {/* Divider */}
-        <div style={{ height: "1px", background: "rgba(184,178,168,0.35)", margin: "56px 0 44px" }} />
+        <div style={{ height: "1px", background: "#E8E3DC", margin: "64px 0 52px" }} />
 
         {/* CTA */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "20px", marginBottom: "0" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "24px" }}>
           <a
             href="/assessment"
             style={{
               display: "inline-block",
-              padding: "18px 56px",
+              padding: "18px 64px",
               borderRadius: "9999px",
-              background: "#3D5A3E",
-              color: "#F5F0E8",
-              fontWeight: 600,
+              background: "transparent",
+              border: "1px solid rgba(90,114,80,0.55)",
+              color: "#5A7250",
+              fontWeight: 500,
               fontSize: "17px",
-              letterSpacing: "0.03em",
+              letterSpacing: "0.04em",
               textDecoration: "none",
-              transition: "background 0.2s",
+              transition: "background 0.3s ease",
             }}
-            onMouseEnter={e => (e.currentTarget.style.background = "#4a6e4b")}
-            onMouseLeave={e => (e.currentTarget.style.background = "#3D5A3E")}
+            onMouseEnter={e => (e.currentTarget.style.background = "rgba(90,114,80,0.08)")}
+            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
           >
             Begin your sonder →
           </a>
@@ -112,12 +130,12 @@ export default function AboutPage() {
             href="/"
             style={{
               fontSize: "13px",
-              color: "#8A8278",
+              color: "#8A9383",
               textDecoration: "none",
               letterSpacing: "0.02em",
             }}
-            onMouseEnter={e => (e.currentTarget.style.color = "#2A2620")}
-            onMouseLeave={e => (e.currentTarget.style.color = "#8A8278")}
+            onMouseEnter={e => (e.currentTarget.style.color = "#3C3530")}
+            onMouseLeave={e => (e.currentTarget.style.color = "#8A9383")}
           >
             ← Return home
           </a>
