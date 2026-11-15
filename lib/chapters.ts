@@ -29,14 +29,14 @@ export const CHAPTERS: Chapter[] = [
     id: "terrain",
     name: "The terrain",
     topic: "Your personality",
-    intro: "Thirty short statements about how you tend to think and feel. Go with your first answer.",
+    intro: "Twenty short statements about how you tend to think and feel.",
     sectionIndex: 0,
   },
   {
     id: "path",
     name: "The path",
     topic: "Work you're drawn to",
-    intro: "Eighteen activities. Rate how much you'd enjoy each one, whether or not you've done it.",
+    intro: "Twelve activities. Rate how much you'd enjoy each one, whether or not you've done it.",
     sectionIndex: 1,
   },
   {

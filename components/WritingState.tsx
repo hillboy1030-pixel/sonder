@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { CircleAlert, RotateCcw } from "lucide-react";
 import { Logo } from "./Logo";
+import { GuideMark } from "./Guide";
 import { MountainScene } from "./MountainScene";
 
 /**
@@ -40,7 +41,9 @@ export function WritingState({
       </header>
       <main className="relative z-10 flex flex-1 items-start justify-center px-5 pt-[12vh]">
         <div className="glass-dark w-full max-w-lg rounded-panel p-8 text-center sm:p-10" role="status" aria-live="polite">
-          <span className="mx-auto block h-14 w-14 rounded-full bg-[radial-gradient(circle,#FBE3AE_0%,#E2A23B_55%,transparent_72%)] animate-breathe" aria-hidden="true" />
+          <span className="mx-auto block w-fit animate-breathe">
+            <GuideMark size={60} />
+          </span>
           <h1 className="type-h2 mt-6">{title}</h1>
           <p key={msg} className="mt-3 min-h-[3.4em] font-read text-lg italic text-snow/85 animate-fade">
             {msg}

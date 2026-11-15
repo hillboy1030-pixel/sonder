@@ -23,6 +23,8 @@ import { MountainScene } from "@/components/MountainScene";
 import { TrailProgress } from "@/components/TrailProgress";
 import { ChapterIcon } from "@/components/ChapterIcon";
 import { SupportNote } from "@/components/SupportNote";
+import { GuideLine } from "@/components/Guide";
+import { GUIDE } from "@/lib/guide";
 import { mentionsCrisis } from "@/lib/safety";
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -42,11 +44,11 @@ type Progress = {
 
 const START: Progress = { phase: "welcome", intakeIndex: 0, chapter: 1, qIndex: 0, answers: {}, context: {} };
 
-const MINUTES: Record<ChapterId, number> = { basecamp: 3, terrain: 4, path: 2, company: 2, carry: 2 };
+const MINUTES: Record<ChapterId, number> = { basecamp: 3, terrain: 3, path: 2, company: 2, carry: 2 };
 const FRAMEWORK: Record<ChapterId, string> = {
   basecamp: "Sonder's own questions",
-  terrain: "Adapted from the IPIP-NEO (Big Five)",
-  path: "Adapted from the O*NET Interest Profiler (Holland codes)",
+  terrain: "From the Mini-IPIP, a published short form of the Big Five",
+  path: "Based on Holland's work-interest types (as used by O*NET)",
   company: "Adapted from the ECR relationship scales",
   carry: "Adapted from the VIA character strengths",
 };
@@ -316,7 +318,8 @@ function Welcome({
     return (
       <div>
         <h1 className="type-h1 text-ink">Welcome back.</h1>
-        <p className="type-lede mt-4 text-slate">
+        <GuideLine className="mt-6">{GUIDE.welcomeBack}</GuideLine>
+        <p className="mt-5 font-sign text-[0.98rem] text-slate">
           You stopped at <span className="font-semibold text-ink">{where}</span>. Your answers are still here, in this browser.
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -336,7 +339,8 @@ function Welcome({
   return (
     <div>
       <h1 className="type-h1 text-ink">Your climb has five stages.</h1>
-      <p className="type-lede mt-4 text-slate">
+      <GuideLine className="mt-6">{GUIDE.welcome}</GuideLine>
+      <p className="mt-5 font-sign text-[0.98rem] text-slate">
         About {total} minutes. Your progress saves as you go, so you can stop and come back.
       </p>
 
@@ -435,6 +439,11 @@ function IntakeCard({
         }
         right={`${index + 1} of ${INTAKE_STEPS.length}`}
       />
+      {index === 0 && (
+        <GuideLine size="sm" className="mt-5">
+          {GUIDE.chapterIntro.basecamp}
+        </GuideLine>
+      )}
       <h1 className="type-h2 mt-4 text-ink">
         {step.prompt}
         {step.required && <span className="sr-only"> (required)</span>}
@@ -456,7 +465,7 @@ function IntakeCard({
         {step.kind === "multi" && (
           <fieldset>
             <legend className="sr-only">{step.prompt}</legend>
-            <div className="flex flex-col gap-2.5">
+            <div className={`grid gap-2.5 ${step.options!.length > 4 ? "sm:grid-cols-2" : ""}`}>
               {step.options!.map((opt) => {
                 const on = selected.includes(opt);
                 const full = !!step.maxPicks && selected.length >= step.maxPicks && !on;
@@ -560,7 +569,8 @@ function ChapterIntro({ chapterIndex, onStart, onBack }: { chapterIndex: number;
       </div>
       <h1 className="type-h1 mt-6 text-ink">{c.name}</h1>
       <p className="mt-2 font-sign text-lg font-medium text-pine-2">{c.topic}</p>
-      <p className="type-lede mt-5 text-slate">{c.intro}</p>
+      <GuideLine className="mt-6">{GUIDE.chapterIntro[c.id]}</GuideLine>
+      <p className="mt-5 font-read text-[1.05rem] text-slate">{c.intro}</p>
 
       <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 font-sign text-[0.95rem] text-stone">
         <li className="flex items-center gap-1.5">
@@ -653,17 +663,23 @@ function MarkerCard({
         </span>
         <p className="type-kicker">{last ? "Summit reached" : `${c.name}: complete`}</p>
       </div>
-      {marker && (
-        <>
-          <h1 className="type-h2 mt-6 text-ink">{marker.headline}</h1>
-          <p className="type-lede mt-4 text-slate">{marker.detail}</p>
-        </>
+      {marker && <h1 className="type-h2 mt-6 text-ink">{marker.headline}</h1>}
+      {(marker || last) && (
+        <GuideLine className="mt-5 text-left">
+          {marker?.detail}
+          {last && (
+            <>
+              {marker ? " " : ""}
+              {GUIDE.summit}
+            </>
+          )}
+        </GuideLine>
       )}
-      <p className="mt-6 font-sign text-[0.95rem] text-stone">
-        {last
-          ? "That's every question. Next, Sonder writes your first three insights."
-          : `${remaining} chapter${remaining === 1 ? "" : "s"} to go. Your full report goes much deeper than this.`}
-      </p>
+      {!last && (
+        <p className="mt-6 font-sign text-[0.95rem] text-stone">
+          {`${remaining} chapter${remaining === 1 ? "" : "s"} to go. Your full report goes much deeper than this.`}
+        </p>
+      )}
       <CardFooter onBack={onBack}>
         <button onClick={onContinue} className="btn btn-primary" autoFocus>
           {last ? "See your first insights" : "Keep climbing"}

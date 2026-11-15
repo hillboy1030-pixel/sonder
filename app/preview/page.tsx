@@ -22,6 +22,8 @@ import { ChapterIcon } from "@/components/ChapterIcon";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { SupportNote } from "@/components/SupportNote";
 import { contextNeedsCare } from "@/lib/safety";
+import { GUIDE } from "@/lib/guide";
+import { GuideLine } from "@/components/Guide";
 import { KEYS, readJSON, writeJSON } from "@/lib/storage";
 import { useStored } from "@/lib/useStored";
 import { REPORT_PRICE_LABEL } from "@/lib/pricing";
@@ -31,12 +33,7 @@ import { REPORT_SECTIONS } from "@/lib/reportSections";
 type Insight = { title: string; insight: string };
 type Marker = { chapter: ChapterId; headline: string; detail: string };
 
-const MESSAGES = [
-  "Reading your answers…",
-  "Looking at where your scores meet…",
-  "Holding what you shared at basecamp…",
-  "Writing your first three insights…",
-];
+const MESSAGES = GUIDE.previewWriting;
 
 const LENSES = [
   { icon: Eye, label: "The voice inside" },
@@ -107,7 +104,7 @@ export default function PreviewPage() {
   if (!insights) {
     return (
       <WritingState
-        title="First light is coming"
+        title="Your guide is reading"
         messages={MESSAGES}
         seconds={22}
         note="This usually takes 15 to 30 seconds."
@@ -129,10 +126,8 @@ function Preview({ insights }: { insights: Insight[] }) {
       <main className="flex-1">
         <section className="mx-auto max-w-3xl px-5 pb-6 pt-28 sm:px-8 sm:pt-36">
           <p className="type-kicker">First light</p>
-          <h1 className="type-h1 mt-3 text-ink">Three things your answers say about you.</h1>
-          <p className="type-lede mt-4 text-slate">
-            Written from your scores and what you shared at basecamp. Read them slowly.
-          </p>
+          <h1 className="type-h1 mt-3 text-ink">Three things I noticed about you.</h1>
+          <GuideLine className="mt-6">{GUIDE.preview}</GuideLine>
           {needsCare && (
             <div className="mt-8">
               <SupportNote compact />
@@ -238,9 +233,12 @@ function Unlock() {
           <div>
             <p className="type-kicker text-gold-hi">The summit</p>
             <h2 className="type-h1 mt-2">Read your full report.</h2>
+            <GuideLine tone="dark" size="sm" className="mt-5">
+              {GUIDE.unlock}
+            </GuideLine>
             <p className="mt-4 text-snow/80">
-              Nine sections that go far deeper than these three insights, ending with books, prompts,
-              and practices for your next 90 days.
+              Nine sections that go far deeper than these three insights, including what you&rsquo;re
+              carrying right now, and ending with your first 90 days.
             </p>
             <p className="mt-7 flex items-baseline gap-2">
               <span className="font-sign text-6xl font-bold leading-none">{REPORT_PRICE_LABEL}</span>

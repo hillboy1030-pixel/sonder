@@ -35,7 +35,7 @@ export function calculateScores(answers: Record<number, number>): Scores {
     return Math.round((raw / (itemCount * 5)) * 100);
   }
 
-  // ── Big Five (Section 0, Q1–30) ──────────────────────────────────────────
+  // ── Big Five (Section 0) ──────────────────────────────────────────
   const bfSection = SECTIONS[0];
   const bfDimensions = [
     "Neuroticism",
@@ -52,7 +52,7 @@ export function calculateScores(answers: Record<number, number>): Scores {
     bigFive[dim] = toPercentile(raw, items.length);
   }
 
-  // ── Holland Code (Section 1, Q31–48) ────────────────────────────────────
+  // ── Holland Code (Section 1) ────────────────────────────────────
   const hollandSection = SECTIONS[1];
   const hollandTypes = [
     "Realistic",
@@ -70,7 +70,7 @@ export function calculateScores(answers: Record<number, number>): Scores {
     holland[type] = toPercentile(raw, items.length);
   }
 
-  // ── Attachment Style (Section 2, Q49–60) ────────────────────────────────
+  // ── Attachment Style (Section 2) ────────────────────────────────
   const ecrSection = SECTIONS[2];
   const avoidanceItems = ecrSection.questions.filter((q) => q.dimension === "Avoidance");
   const anxietyItems   = ecrSection.questions.filter((q) => q.dimension === "Anxiety");
@@ -86,7 +86,7 @@ export function calculateScores(answers: Record<number, number>): Scores {
     ),
   };
 
-  // ── VIA Strengths (Section 3, Q61–72) ───────────────────────────────────
+  // ── VIA Strengths (Section 3) ───────────────────────────────────
   const viaSection = SECTIONS[3];
   const allStrengths: Record<string, number> = {};
   for (const q of viaSection.questions) {
