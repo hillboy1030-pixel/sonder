@@ -24,7 +24,7 @@ import { TrailProgress } from "@/components/TrailProgress";
 import { ChapterIcon } from "@/components/ChapterIcon";
 import { SupportNote } from "@/components/SupportNote";
 import { GuideLine } from "@/components/Guide";
-import { Ember, EmberAvatar, type EmberMood } from "@/components/Ember";
+import { EmberAvatar, type EmberMood } from "@/components/Ember";
 import { Cairn } from "@/components/Cairn";
 import { cairnFor, STONE_CHAPTERS } from "@/lib/cairn";
 import { reactTo, newReactionState, type Reaction } from "@/lib/reactions";
@@ -363,10 +363,7 @@ function Welcome({
 
   return (
     <div>
-      <div className="flex items-end justify-between gap-4">
-        <h1 className="type-h1 text-ink">Your climb has five stages.</h1>
-        <Ember mood="listening" size={78} className="-mb-1 hidden shrink-0 sm:block" title="Ember, your guide" />
-      </div>
+      <h1 className="type-h1 text-ink">Your climb has five stages.</h1>
       <GuideLine className="mt-6" mood="pleased">{GUIDE.welcome}</GuideLine>
       <p className="mt-5 font-sign text-[0.98rem] text-slate">
         About {total} minutes. Your progress saves as you go, so you can stop and come back.
@@ -835,7 +832,7 @@ function MarkerCard({
           <Cairn stones={stones} ghosts={last ? 0 : STONE_CHAPTERS.length - stones.length} complete={last} dropLast size={last ? 170 : 160} />
         </div>
         <div className="text-center sm:text-left">
-          <p className="type-kicker">{last ? "Summit reached. Your cairn is complete." : "A stone for your cairn"}</p>
+          <p className="type-kicker">{last ? "Summit reached. All four stones." : `Stone ${stones.length} of ${STONE_CHAPTERS.length}`}</p>
           {stone && <h1 className="type-h1 mt-2 text-ink">{stone.word}</h1>}
           {stone && <p className="mt-1 font-sign text-[1.02rem] text-slate">{stone.meaning}</p>}
         </div>
@@ -853,7 +850,7 @@ function MarkerCard({
       )}
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <p className="font-sign text-[0.95rem] text-stone">
-          {last ? stones.map((s) => s.word).join(" · ") : `${remaining} chapter${remaining === 1 ? "" : "s"} to go.`}
+          {last ? stones.map((s) => s.word).join(" · ") : `${remaining} stage${remaining === 1 ? "" : "s"} to go.`}
         </p>
         <ShareStoneButton stones={stones} headline={marker?.headline ?? ""} detail={marker?.detail ?? ""} complete={last} />
       </div>
@@ -882,7 +879,7 @@ function ShareStoneButton({ stones, headline, detail, complete }: { stones: Retu
       className="btn btn-quiet btn-sm"
     >
       {state === "done" ? <Check size={16} aria-hidden="true" /> : <Share2 size={16} aria-hidden="true" />}
-      {state === "done" ? "Saved" : state === "busy" ? "Making card" : complete ? "Share my cairn" : "Share this stone"}
+      {state === "done" ? "Saved" : state === "busy" ? "Making card" : complete ? "Share my four stones" : "Share this stone"}
     </button>
   );
 }

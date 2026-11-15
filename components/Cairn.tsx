@@ -5,7 +5,7 @@ import { Ember } from "./Ember";
 
 /**
  * Your cairn. `dropLast` animates the newest stone landing on top.
- * When `complete`, Ember's lantern sits on the summit stone.
+ * When `complete`, Ember sits on the summit stone.
  */
 export function Cairn({
   stones,
@@ -25,12 +25,12 @@ export function Cairn({
 }) {
   const layout = cairnLayout(stones);
   const ghostLayout = cairnLayout([...stones, ...Array.from({ length: ghosts }, (_, i) => ({ ...stones[0], seed: 7 + i * 31 }))]).slice(stones.length);
-  const lanternH = complete ? 64 : 0;
-  const vbH = CAIRN_TOTAL_HEIGHT + 30 + lanternH;
+  const emberH = complete ? 64 : 0;
+  const vbH = CAIRN_TOTAL_HEIGHT + 30 + emberH;
   const top = layout.length ? layout[layout.length - 1] : null;
 
   return (
-    <svg viewBox={`-90 ${-vbH + 14} 180 ${vbH}`} width={size} height={(size * vbH) / 180} className={className} role="img" aria-label={`A cairn of ${stones.length} stones: ${stones.map((s) => s.word).join(", ")}`}>
+    <svg viewBox={`-90 ${-vbH + 14} 180 ${vbH}`} width={size} height={(size * vbH) / 180} className={className} role="img" aria-label={`A stack of ${stones.length} stones: ${stones.map((s) => s.word).join(", ")}`}>
       <ellipse cx="0" cy="6" rx="86" ry="7" fill="#1C2521" opacity="0.12" />
       {ghostLayout.map((g, i) => (
         <path
@@ -62,7 +62,7 @@ export function Cairn({
         );
       })}
       {complete && top && (
-        <foreignObject x={-30 + top.cx} y={top.cy - top.h / 2 - 66} width="60" height="68">
+        <foreignObject x={-30 + top.cx} y={top.cy - top.h / 2 - 62} width="60" height="60">
           <div className="stone-drop" style={{ animationDelay: "500ms" }}>
             <Ember mood="celebrating" size={60} />
           </div>

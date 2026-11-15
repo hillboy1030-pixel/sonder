@@ -141,8 +141,8 @@ const STAGES = [
   {
     icon: Mountain,
     name: "The climb",
-    title: "Four short chapters",
-    body: "56 statements drawn from established personality, career, relationship, and strengths research. Each chapter ends with a trail marker that shows what's taking shape.",
+    title: "Four short stages",
+    body: "56 statements drawn from established personality, career, relationship, and strengths research. Each one ends with a stone and a single word for what's taking shape.",
     meta: "9 minutes",
   },
   {

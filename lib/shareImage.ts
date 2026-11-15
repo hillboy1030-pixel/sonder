@@ -242,7 +242,7 @@ export async function shareStoryCard({
 
   ctx.fillStyle = "#F6F8F7";
   ctx.font = `700 76px ${SIGN}`;
-  ctx.fillText(complete ? "My cairn" : "My cairn so far", 90, 300);
+  ctx.fillText(complete ? "My four stones" : stones.length === 1 ? "My first stone" : "My stones so far", 90, 300);
 
   // Cairn
   const baseY = 1120;
@@ -296,5 +296,5 @@ export async function shareStoryCard({
 
   const blob: Blob | null = await new Promise((r) => canvas.toBlob((b) => r(b), "image/png"));
   if (!blob) return false;
-  return deliverImage(blob, complete ? "my-sonder-cairn.png" : "my-sonder-stone.png", complete ? "My cairn" : "My cairn so far");
+  return deliverImage(blob, complete ? "my-sonder-stones.png" : "my-sonder-stone.png", complete ? "My four stones" : "My stones so far");
 }
