@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   BookOpen,
+  Check,
   Clock,
   Compass,
   Download,
@@ -287,8 +288,7 @@ function Unlock() {
 // ─── Share ────────────────────────────────────────────────────────────────────
 
 function ShareBlock({ insights }: { insights: Insight[] }) {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [busy, setBusy] = useState(false);
+  const [state, setState] = useState<"idle" | "busy" | "saved" | "error">("idle");
   const host = useSyncExternalStore(
     () => () => {},
     () => window.location.host,
@@ -296,66 +296,60 @@ function ShareBlock({ insights }: { insights: Insight[] }) {
   );
 
   const share = useCallback(async () => {
-    if (!cardRef.current) return;
-    setBusy(true);
+    setState("busy");
     try {
-      const html2canvas = (await import("html2canvas")).default;
-      const canvas = await html2canvas(cardRef.current, { scale: 1, width: 1080, height: 1080, backgroundColor: "#213F35", logging: false });
-      const blob: Blob | null = await new Promise((r) => canvas.toBlob(r, "image/png"));
-      if (!blob) return;
+      const { drawShareImage } = await import("@/lib/shareImage");
+      const blob = await drawShareImage(insights, host);
+      if (!blob) throw new Error("Could not draw the image");
       const file = new File([blob], "my-sonder-insights.png", { type: "image/png" });
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: "My Sonder insights", text: `Come inward: ${window.location.origin}` });
+      if (navigator.canShare?.({ files: [file] }) && navigator.share) {
+        try {
+          await navigator.share({ files: [file], title: "Three things my guide noticed", text: `Come inward: ${window.location.origin}` });
+          setState("saved");
+        } catch (err) {
+          setState((err as Error)?.name === "AbortError" ? "idle" : "error");
+        }
       } else {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
         a.download = "my-sonder-insights.png";
+        document.body.appendChild(a);
         a.click();
-        URL.revokeObjectURL(url);
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+        setState("saved");
       }
     } catch (err) {
-      if ((err as Error)?.name !== "AbortError") console.error("Share failed:", err);
-    } finally {
-      setBusy(false);
+      console.error("Share failed:", err);
+      setState("error");
     }
-  }, []);
+  }, [insights, host]);
 
   return (
     <section className="mx-auto max-w-3xl px-5 pb-16 sm:px-8">
       <div className="flex flex-col items-start gap-5 rounded-panel border border-line bg-snow/60 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-7">
         <div>
           <h2 className="type-h3 text-ink">Know someone who&rsquo;d get this?</h2>
-          <p className="mt-1 text-slate">Save your three insights as an image to share with one person.</p>
+          <p className="mt-1 text-slate">
+            {state === "saved"
+              ? "Saved. Your image is in your downloads (or wherever you shared it)."
+              : state === "error"
+              ? "That didn't work. Please try again."
+              : "Save your three insights as an image to share with one person."}
+          </p>
         </div>
-        <button onClick={share} disabled={busy} className="btn btn-secondary btn-sm shrink-0">
-          {busy ? <LoaderCircle size={17} className="animate-spin" aria-hidden="true" /> : <Share2 size={17} aria-hidden="true" />}
-          {busy ? "Making image" : "Share my insights"}
+        <button onClick={share} disabled={state === "busy"} className="btn btn-secondary btn-sm shrink-0">
+          {state === "busy" ? (
+            <LoaderCircle size={17} className="animate-spin" aria-hidden="true" />
+          ) : state === "saved" ? (
+            <Check size={17} aria-hidden="true" />
+          ) : (
+            <Share2 size={17} aria-hidden="true" />
+          )}
+          {state === "busy" ? "Making image" : state === "saved" ? "Saved" : "Share my insights"}
         </button>
-      </div>
-
-      {/* Off-screen card captured as the share image */}
-      <div
-        ref={cardRef}
-        aria-hidden="true"
-        className="fixed left-[-9999px] top-0 flex h-[1080px] w-[1080px] flex-col bg-pine p-[72px] text-snow"
-      >
-        <p className="font-sign text-[40px] font-bold">Sonder</p>
-        <div className="mt-10 flex flex-1 flex-col gap-6">
-          {insights.map((ins, i) => (
-            <div key={i} className="flex flex-1 flex-col justify-center rounded-[24px] bg-white/[0.07] px-10 py-6">
-              <p className="font-sign text-[30px] font-semibold text-gold-hi">{ins.title}</p>
-              <p className="mt-3 font-read text-[24px] leading-[1.45] text-snow/90">{firstSentences(ins.insight, 2)}</p>
-            </div>
-          ))}
-        </div>
-        <p className="mt-8 font-sign text-[24px] text-snow/60">Come inward. {host}</p>
       </div>
     </section>
   );
-}
-
-function firstSentences(text: string, n: number) {
-  const parts = text.match(/[^.!?]+[.!?]+/g);
-  return parts ? parts.slice(0, n).join("").trim() : text;
 }
