@@ -45,3 +45,16 @@ SONDER_MOCK=1 npm run dev
 `SONDER_MOCK=1` swaps the AI and Stripe for sample data so you can click through the
 whole flow for free. It only works in development; production ignores it. In development
 there's also a "Dev: fill and finish" button on the assessment page.
+
+## The 90-day journal (in progress)
+
+- `lib/prompts.ts`: Ember's instructions for the journal (`JOURNAL_LETTERS_PROMPT`, `JOURNAL_PHASE_PROMPT`)
+- `lib/server/journal/generate.ts`: writes the journal in four parallel AI calls (letters + three 30-day phases), validated and retried
+- `lib/server/journal/pdf.tsx`: print-ready PDFs for Lulu: 224-page 6x9 black-and-white interior (with 0.125 in bleed, mirrored margins, embedded fonts from `assets/fonts`) and a full-colour wraparound cover
+- `lib/server/lulu.ts`: Lulu Print API client (cover size, cost, print job). Not wired in yet. Needs `LULU_CLIENT_KEY`, `LULU_CLIENT_SECRET`, `LULU_ENV`
+- In development, `/api/dev/journal-sample?part=interior` (or `part=cover`) renders the sample journal
+
+## Protection against runaway costs
+
+- `lib/server/rateLimit.ts` limits each visitor on the routes that cost money (preview: 6/hour and 15/day) and refuses calls from other websites
+- Set a monthly spend limit in the Anthropic console as the hard ceiling

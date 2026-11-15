@@ -9,6 +9,7 @@ import { isTester } from "@/lib/server/tester";
 import { MOCK_REPORT, mockDelay } from "@/lib/server/mockData";
 import { aiErrorResponse } from "@/lib/server/aiErrors";
 import { extractStructured } from "@/lib/server/extract";
+import { limitRequest } from "@/lib/server/rateLimit";
 
 // The full report takes 2–3 minutes to write.
 export const maxDuration = 300;
@@ -41,6 +42,8 @@ const REPORT_TOOL: Anthropic.Tool = {
 };
 
 export async function POST(request: NextRequest) {
+  const limited = limitRequest(request, "report");
+  if (limited) return limited;
   let body: { scores?: unknown; context?: unknown; session_id?: unknown; tester?: unknown };
   try {
     body = await request.json();
