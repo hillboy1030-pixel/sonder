@@ -4,7 +4,7 @@
 //
 // Voice: short sentences. Warm, plain, a little dry. Asks more than tells.
 // Honest about patterns, gentle with people. Never flatters, never lectures.
-// No name, no gender: always "your guide".
+// Name: Ember, a small old flame that lives in a trail lantern. No gender.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { ChapterId } from "./chapters";

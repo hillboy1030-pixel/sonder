@@ -277,3 +277,54 @@ details > summary::-webkit-details-marker { display: none; }
   html, body { background: white !important; color: black !important; }
   .print-break { break-before: page; }
 }
+
+/* ── Ember, the guide ───────────────────────────────────────────────────── */
+
+@keyframes ember-flicker {
+  0%, 100% { scale: 1 1; rotate: 0deg; }
+  22% { scale: 1.015 1.035; rotate: -1.2deg; }
+  48% { scale: 0.99 0.985; rotate: 0.8deg; }
+  74% { scale: 1.01 1.02; rotate: -0.4deg; }
+}
+@keyframes ember-glow {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+@keyframes ember-blink {
+  0%, 92%, 100% { scale: 1 1; }
+  95% { scale: 1 0.1; }
+}
+@keyframes ember-spark {
+  0% { opacity: 0; translate: 0 6px; }
+  25% { opacity: 1; }
+  100% { opacity: 0; translate: 0 -14px; }
+}
+.ember-flicker { animation: ember-flicker 2.8s ease-in-out infinite; transform-box: view-box; }
+.ember-glow { animation: ember-glow 3.4s ease-in-out infinite; }
+.ember-blink { animation: ember-blink 5.5s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.ember-spark { animation: ember-spark 2.2s ease-out infinite; }
+
+@keyframes stone-drop {
+  0% { opacity: 0; translate: 0 -46px; }
+  60% { opacity: 1; translate: 0 3px; }
+  80% { translate: 0 -2px; }
+  100% { opacity: 1; translate: 0 0; }
+}
+.stone-drop { animation: stone-drop 650ms cubic-bezier(0.3, 0.7, 0.4, 1) both; }
+
+@keyframes card-exit {
+  to { opacity: 0; translate: -36px -6px; rotate: -3deg; }
+}
+.card-exit { animation: card-exit 240ms cubic-bezier(0.5, 0, 0.75, 0) forwards; }
+
+@keyframes toast-in {
+  0% { opacity: 0; translate: 0 -10px; scale: 0.96; }
+  100% { opacity: 1; translate: 0 0; scale: 1; }
+}
+.toast-in { animation: toast-in 320ms var(--ease-trail) both; }
+
+.flip-card { perspective: 1400px; }
+.flip-inner { transition: transform 700ms cubic-bezier(0.3, 0.7, 0.3, 1); transform-style: preserve-3d; }
+.flip-card[data-flipped="true"] .flip-inner { transform: rotateY(180deg); }
+.flip-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.flip-back { transform: rotateY(180deg); }

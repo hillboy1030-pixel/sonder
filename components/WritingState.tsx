@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { CircleAlert, RotateCcw } from "lucide-react";
 import { Logo } from "./Logo";
-import { GuideMark } from "./Guide";
+import { Ember, type EmberMood } from "./Ember";
 import { MountainScene } from "./MountainScene";
 
 /**
@@ -15,11 +15,13 @@ export function WritingState({
   messages,
   seconds,
   note,
+  mood = "writing",
 }: {
   title: string;
   messages: string[];
   seconds: number;
   note: string;
+  mood?: EmberMood;
 }) {
   const [elapsed, setElapsed] = useState(0);
 
@@ -41,8 +43,8 @@ export function WritingState({
       </header>
       <main className="relative z-10 flex flex-1 items-start justify-center px-5 pt-[12vh]">
         <div className="glass-dark w-full max-w-lg rounded-panel p-8 text-center sm:p-10" role="status" aria-live="polite">
-          <span className="mx-auto block w-fit animate-breathe">
-            <GuideMark size={60} />
+          <span className="mx-auto block w-fit">
+            <Ember mood={mood} size={104} title="Ember, your guide" />
           </span>
           <h1 className="type-h2 mt-6">{title}</h1>
           <p key={msg} className="mt-3 min-h-[3.4em] font-read text-lg italic text-snow/85 animate-fade">

@@ -22,6 +22,7 @@ import { ChapterIcon } from "@/components/ChapterIcon";
 import { JournalPageMock, JOURNAL_PHASES } from "@/components/JournalBits";
 import { REPORT_PRICE_LABEL } from "@/lib/pricing";
 import { GuideLine } from "@/components/Guide";
+import { Ember } from "@/components/Ember";
 import { REPORT_SECTIONS } from "@/lib/reportSections";
 import type { ChapterId } from "@/lib/chapters";
 
@@ -86,7 +87,7 @@ function Hero() {
 
 const GUIDE_TRAITS = [
   { icon: HeartHandshake, title: "Honest, never harsh", body: "Names your patterns plainly and stays kind about it." },
-  { icon: MessageCircleQuestion, title: "Asks before telling", body: "The best insights are the ones you find yourself. Your guide asks the questions that get you there." },
+  { icon: MessageCircleQuestion, title: "Asks before telling", body: "The best insights are the ones you find yourself. Ember asks the questions that get you there." },
   { icon: Footprints, title: "Always a next step", body: "Every insight comes with something small to try, today." },
 ];
 
@@ -95,11 +96,14 @@ function Guide() {
     <section className="border-b border-line/70 bg-snow">
       <div className="mx-auto grid max-w-6xl gap-12 px-6 py-24 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-20 lg:py-28">
         <div>
-          <h2 className="type-h1 text-ink">A guide, not a grade.</h2>
+          <div className="flex items-end gap-5">
+            <Ember mood="calm" size={96} className="shrink-0" title="Ember, your guide" />
+            <h2 className="type-h1 pb-2 text-ink">A guide, not a grade.</h2>
+          </div>
           <p className="type-lede mt-5 max-w-xl text-slate">
-            Most personality tests hand you a label and leave. Sonder gives you a guide: a steady
-            voice that reads your answers, tells you the truth kindly, and walks with you while you
-            do something about it.
+            Most personality tests hand you a label and leave. Sonder gives you Ember: a small, old
+            flame that has walked this mountain with a great many people. Ember reads your answers,
+            tells you the truth kindly, and walks with you while you do something about it.
           </p>
           <GuideLine size="lg" className="mt-10 max-w-xl">
             I won&rsquo;t tell you who to be. I&rsquo;ll show you who you already are, and walk with you
@@ -300,8 +304,8 @@ function Journal() {
 
 const FAQS = [
   {
-    q: "Who is the guide?",
-    a: "Your guide is the voice of Sonder: an AI shaped to read your answers the way a wise, steady mentor would. Honest, warm, never harsh, and always pointing to a next step. Your guide isn't a person and isn't a therapist.",
+    q: "Who is Ember?",
+    a: "Ember is your guide: the voice of Sonder, an AI shaped to read your answers the way a wise, steady mentor would. Honest, warm, never harsh, and always pointing to a next step. Ember isn't a person and isn't a therapist.",
   },
   {
     q: "Is Sonder therapy or a diagnosis?",

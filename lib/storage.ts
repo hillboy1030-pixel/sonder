@@ -9,6 +9,7 @@ export const KEYS = {
   report: "sonder_report",
   session: "sonder_session",
   tester: "sonder_tester",
+  cairn: "sonder_cairn",
 } as const;
 
 export function readJSON<T>(key: string): T | null {
