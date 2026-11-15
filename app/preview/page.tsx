@@ -20,6 +20,8 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { WritingState, ProblemState } from "@/components/WritingState";
 import { ChapterIcon } from "@/components/ChapterIcon";
 import { WaitlistForm } from "@/components/WaitlistForm";
+import { SupportNote } from "@/components/SupportNote";
+import { contextNeedsCare } from "@/lib/safety";
 import { KEYS, readJSON, writeJSON } from "@/lib/storage";
 import { useStored } from "@/lib/useStored";
 import { REPORT_PRICE_LABEL } from "@/lib/pricing";
@@ -49,6 +51,7 @@ export default function PreviewPage() {
   const cachedInsights = cached?.previewInsights?.length === 3 ? cached.previewInsights : null;
   const [fresh, setFresh] = useState<Insight[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | undefined>();
   const [attempt, setAttempt] = useState(0);
   const started = useRef(-1);
   const insights = fresh ?? (attempt === 0 ? cachedInsights : null);
@@ -71,7 +74,10 @@ export default function PreviewPage() {
     })
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error || "Your preview didn't come through. Please try again.");
+        if (!res.ok) {
+          setErrorCode(data.code);
+          throw new Error(data.error || "Your preview didn't come through. Please try again.");
+        }
         return data as { previewInsights: Insight[] };
       })
       .then((data) => {
@@ -89,6 +95,7 @@ export default function PreviewPage() {
       <ProblemState
         title="Your insights didn't come through"
         message={error}
+        code={errorCode}
         primary={{ label: "Try again", onClick: () => (setError(null), setAttempt((a) => a + 1)) }}
         secondary={{ label: "Back to the assessment", href: "/assessment" }}
       />
@@ -111,6 +118,7 @@ export default function PreviewPage() {
 
 function Preview({ insights }: { insights: Insight[] }) {
   const markers = useStored<Marker[]>(KEYS.markers) ?? [];
+  const needsCare = contextNeedsCare(useStored<Record<string, string>>(KEYS.context));
 
   return (
     <div className="flex min-h-svh flex-col bg-mist">
@@ -122,6 +130,11 @@ function Preview({ insights }: { insights: Insight[] }) {
           <p className="type-lede mt-4 text-slate">
             Written from your scores and what you shared at basecamp. Read them slowly.
           </p>
+          {needsCare && (
+            <div className="mt-8">
+              <SupportNote compact />
+            </div>
+          )}
 
           <ol className="mt-10 space-y-4">
             {insights.map((ins, i) => {

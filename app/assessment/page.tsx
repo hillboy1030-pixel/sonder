@@ -22,6 +22,8 @@ import { Logo } from "@/components/Logo";
 import { MountainScene } from "@/components/MountainScene";
 import { TrailProgress } from "@/components/TrailProgress";
 import { ChapterIcon } from "@/components/ChapterIcon";
+import { SupportNote } from "@/components/SupportNote";
+import { mentionsCrisis } from "@/lib/safety";
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -405,6 +407,15 @@ function IntakeCard({
 }) {
   const selected = step.kind === "multi" ? value.split("|").filter(Boolean) : [];
   const canContinue = !step.required || (step.kind === "multi" ? selected.length > 0 : value.trim() !== "");
+  const [showSupport, setShowSupport] = useState(false);
+  const isText = step.kind === "text" || step.kind === "longtext";
+  const proceed = () => {
+    if (isText && !showSupport && mentionsCrisis(value)) {
+      setShowSupport(true);
+      return;
+    }
+    onNext();
+  };
   const inputRef = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -448,12 +459,14 @@ function IntakeCard({
             <div className="flex flex-col gap-2.5">
               {step.options!.map((opt) => {
                 const on = selected.includes(opt);
+                const full = !!step.maxPicks && selected.length >= step.maxPicks && !on;
                 return (
                   <Choice
                     key={opt}
                     label={opt}
                     multi
                     selected={on}
+                    disabled={full}
                     onClick={() =>
                       onChange((on ? selected.filter((s) => s !== opt) : [...selected, opt]).join("|"))
                     }
@@ -478,7 +491,7 @@ function IntakeCard({
                 maxLength={step.maxLength}
                 placeholder={step.placeholder}
                 onChange={(e) => onChange(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && canContinue && onNext()}
+                onKeyDown={(e) => e.key === "Enter" && canContinue && proceed()}
                 className="w-full rounded-[14px] border border-line bg-snow/80 px-4 py-3.5 font-read text-lg text-ink outline-none transition-colors placeholder:text-stone/70 focus:border-pine focus:bg-snow"
               />
             ) : (
@@ -492,6 +505,11 @@ function IntakeCard({
                 onChange={(e) => onChange(e.target.value)}
                 className="w-full resize-none rounded-[14px] border border-line bg-snow/80 px-4 py-3.5 font-read text-lg leading-relaxed text-ink outline-none transition-colors placeholder:text-stone/70 focus:border-pine focus:bg-snow"
               />
+            )}
+            {showSupport && (
+              <div className="mt-5">
+                <SupportNote onContinue={onNext} />
+              </div>
             )}
             {step.maxLength && value.length > step.maxLength * 0.7 && (
               <p className="mt-1.5 text-right font-sign text-xs text-stone">
@@ -510,7 +528,7 @@ function IntakeCard({
                 Skip
               </button>
             )}
-            <button onClick={onNext} disabled={!canContinue} className="btn btn-dark btn-sm">
+            <button onClick={proceed} disabled={!canContinue} className="btn btn-dark btn-sm">
               Continue
               <ArrowRight size={17} aria-hidden="true" />
             </button>
@@ -705,6 +723,7 @@ function Choice({
   keyHint,
   multi,
   scale,
+  disabled,
 }: {
   label: string;
   selected: boolean;
@@ -712,15 +731,19 @@ function Choice({
   keyHint?: number;
   multi?: boolean;
   scale?: number;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       aria-pressed={selected}
       className={`group flex w-full items-center gap-3.5 rounded-[14px] border px-3.5 py-3 text-left transition-all duration-200 ${
         selected
           ? "border-pine bg-pine text-snow shadow-[0_10px_24px_-14px_rgb(33_63_53/0.9)]"
+          : disabled
+          ? "cursor-not-allowed border-line bg-snow/40 text-stone"
           : "border-line bg-snow/75 text-ink hover:-translate-y-px hover:border-pine/50 hover:bg-snow hover:shadow-[0_8px_20px_-14px_rgb(33_63_53/0.6)]"
       }`}
     >
@@ -779,7 +802,7 @@ function DevFill({ onFill }: { onFill: (p: Progress) => void }) {
             hasChildren: "Yes",
             workField: "Sales",
             hobby: "Twenty years of competitive pool",
-            clarityGoal: "My career direction|Who I am as a person",
+            clarityGoal: "My career or calling|Who I am, underneath it all",
             lifeStage: "Navigating (transition, uncertainty, change)",
             hardestThing: "Starting a new role while staying present for my family",
             socialPerception: "Always on, always helping",

@@ -17,6 +17,8 @@ export type IntakeStep = {
   placeholder?: string;
   required?: boolean;
   maxLength?: number;
+  /** Multi-select only: the most options someone can pick. */
+  maxPicks?: number;
 };
 
 export const INTAKE_KEYS = [
@@ -75,8 +77,19 @@ export const INTAKE_STEPS: IntakeStep[] = [
     key: "clarityGoal",
     kind: "multi",
     prompt: "What do you most want clarity on?",
-    help: "Pick as many as fit.",
-    options: ["My career direction", "My relationships", "Who I am as a person"],
+    help: "Pick up to three.",
+    options: [
+      "My career or calling",
+      "My relationships",
+      "Who I am, underneath it all",
+      "A big decision in front of me",
+      "Purpose and meaning",
+      "Confidence and self-worth",
+      "Stress and overwhelm",
+      "Being the parent I want to be",
+      "Discipline and follow-through",
+    ],
+    maxPicks: 3,
     required: true,
   },
   {
@@ -136,7 +149,10 @@ export const INTAKE_STEPS: IntakeStep[] = [
 ];
 
 export function joinClarityGoals(goals: string[]): string {
-  const normalized = goals.map((g) => g.replace(/^My /, "").toLowerCase());
+  const normalized = goals.map((g) => {
+    const t = g.replace(/^My /, "");
+    return /^I\b/.test(t) ? t : t.charAt(0).toLowerCase() + t.slice(1);
+  });
   if (normalized.length <= 1) return normalized[0] ?? "";
   if (normalized.length === 2) return `${normalized[0]} and ${normalized[1]}`;
   return `${normalized.slice(0, -1).join(", ")}, and ${normalized[normalized.length - 1]}`;
