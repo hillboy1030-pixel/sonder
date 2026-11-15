@@ -23,6 +23,8 @@ import { Logo, LogoMark } from "@/components/Logo";
 import { SiteFooter } from "@/components/SiteFooter";
 import { WritingState, ProblemState } from "@/components/WritingState";
 import { WaitlistForm } from "@/components/WaitlistForm";
+import { SupportNote } from "@/components/SupportNote";
+import { contextNeedsCare } from "@/lib/safety";
 import { JournalPageMock } from "@/components/JournalBits";
 import { KEYS, readJSON, writeJSON } from "@/lib/storage";
 import { useStored } from "@/lib/useStored";
@@ -73,7 +75,7 @@ function ReportLoader() {
   const cachedReport = cached?.sections?.length === 9 ? cached : null;
   const [fresh, setFresh] = useState<Report | null>(null);
   const report = fresh ?? cachedReport;
-  const [problem, setProblem] = useState<{ title: string; message: string; retry: boolean } | null>(null);
+  const [problem, setProblem] = useState<{ title: string; message: string; retry: boolean; code?: string } | null>(null);
   const [attempt, setAttempt] = useState(0);
   const started = useRef(-1);
 
@@ -111,7 +113,8 @@ function ReportLoader() {
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
           const err = new Error(data.error || "Your report didn't come through. Please try again.");
-          (err as Error & { payment?: boolean }).payment = data.code === "payment";
+          (err as Error & { payment?: boolean; code?: string }).payment = data.code === "payment";
+          (err as Error & { code?: string }).code = data.code;
           throw err;
         }
         return data as Report;
@@ -120,12 +123,13 @@ function ReportLoader() {
         writeJSON(KEYS.report, data);
         setFresh(data);
       })
-      .catch((err: Error & { payment?: boolean }) => {
+      .catch((err: Error & { payment?: boolean; code?: string }) => {
         const offline = /fetch|network/i.test(err.message);
         setProblem({
           title: err.payment ? "We couldn't confirm your purchase" : "Your report didn't come through",
           message: offline ? "We couldn't reach Sonder. Check your connection and try again." : err.message,
           retry: true,
+          code: err.payment ? undefined : err.code,
         });
       });
   }, [attempt, cached, cachedReport, fresh, params, router]);
@@ -135,6 +139,7 @@ function ReportLoader() {
       <ProblemState
         title={problem.title}
         message={problem.message}
+        code={problem.code}
         primary={problem.retry ? { label: "Try again", onClick: () => (setProblem(null), setAttempt((a) => a + 1)) } : undefined}
         secondary={{ label: "Email us", href: "mailto:hello@sonder-me.com?subject=Sonder%20report%20help" }}
       />
@@ -157,6 +162,7 @@ function ReportLoader() {
 
 function FullReport({ report }: { report: Report }) {
   const insights = useStored<{ previewInsights: Insight[] }>(KEYS.preview)?.previewInsights ?? [];
+  const needsCare = contextNeedsCare(useStored<Record<string, string>>(KEYS.context));
   const [downloading, setDownloading] = useState(false);
   const [active, setActive] = useState(0);
   const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
@@ -212,6 +218,11 @@ function FullReport({ report }: { report: Report }) {
         <section className="mx-auto max-w-6xl px-5 pb-10 pt-14 sm:px-8 sm:pt-20">
           <p className="type-kicker">{today}</p>
           <h1 className="type-display mt-4 max-w-[12ch] text-ink">Your Sonder Report</h1>
+          {needsCare && (
+            <div className="no-print mt-8 max-w-2xl">
+              <SupportNote compact />
+            </div>
+          )}
           <div className="no-print mt-8 max-w-2xl space-y-3 rounded-panel border border-gold/50 bg-gold/10 p-5 font-sign text-[0.95rem] leading-relaxed text-slate">
             <p>
               <strong className="text-ink">Save a copy now.</strong> Your report lives only in this

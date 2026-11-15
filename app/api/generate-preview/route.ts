@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { PREVIEW_SYSTEM_PROMPT } from "@/lib/prompts";
 import { AI_MODEL, MOCK_MODE } from "@/lib/server/config";
 import { cleanContext, cleanScores } from "@/lib/server/validate";
+import { contextNeedsCare } from "@/lib/safety";
 import { MOCK_PREVIEW, mockDelay } from "@/lib/server/mockData";
 import { aiErrorResponse } from "@/lib/server/aiErrors";
 
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
   }
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const userContent = `${JSON.stringify(context ? { scores, context } : { scores })}\n\nGenerate the three preview insight cards using the return_preview_insights tool.`;
+  const userContent = `${JSON.stringify({ scores, ...(context ? { context } : {}), ...(contextNeedsCare(context) ? { care: true } : {}) })}\n\nGenerate the three preview insight cards using the return_preview_insights tool.`;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     let response: Anthropic.Message;
