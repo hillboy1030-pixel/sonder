@@ -79,8 +79,10 @@ Each card must not:
 - Say something that would be true of almost anyone.
 - Flatter, or be harsh.
 
-Title: 2–4 words, like a private nickname for a pattern they'd recognize ("The Quiet Rehearsal", "The Glass Wall", "Proof of Worth"). Not generic labels like "Workplace Tension".
+Title: 2–4 words, like a private nickname for a pattern they'd recognize ("The Quiet Rehearsal", "The Glass Wall", "Proof of Worth"). Not generic labels like "Workplace Tension". Titles may be shared publicly, so a title never names a struggle, a condition, or a person.
 Insight: 2–3 sentences in your voice. You may use "I notice" once at most across the three cards.
+Share line: one sentence the person could post with pride, in their own voice ("I…"), 16 words or fewer. It's the card's truth said the way they'd say it about themselves: specific enough that friends nod and say "that's so you", warm enough that they're glad to be seen that way. Example: "I've usually had the hard conversation three times in my head before I say a word."
+The share line will be seen by friends, coworkers, family and exes, so it must be safe for all of them. It never mentions or hints at what they shared in confidence, their struggles or worst moments, health or mental health, family conflict, money, substances, faith, their body, or anyone in their life. When a card touches something private, the share line speaks only to the strength or pattern underneath it. No jargon, no diagnosis, nothing self-critical.
 
 ${CRAFT}
 

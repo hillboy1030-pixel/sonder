@@ -1,11 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   BookOpen,
-  Check,
   Clock,
   Compass,
   Download,
@@ -24,12 +23,14 @@ import { SupportNote } from "@/components/SupportNote";
 import { contextNeedsCare } from "@/lib/safety";
 import { GUIDE } from "@/lib/guide";
 import { GuideLine } from "@/components/Guide";
+import { Ember, EmberAvatar } from "@/components/Ember";
+import type { Stone } from "@/lib/cairn";
 import { KEYS, readJSON, writeJSON } from "@/lib/storage";
 import { useStored } from "@/lib/useStored";
 import { REPORT_PRICE_LABEL } from "@/lib/pricing";
 import { REPORT_SECTIONS } from "@/lib/reportSections";
 
-type Insight = { title: string; insight: string };
+type Insight = { title: string; insight: string; shareLine?: string };
 
 const MESSAGES = GUIDE.previewWriting;
 
@@ -139,10 +140,9 @@ function Preview({ insights }: { insights: Insight[] }) {
           </ol>
         </section>
 
-        <Unlock />
-
-
         <ShareBlock insights={insights} />
+
+        <Unlock />
 
         <section className="border-t border-line bg-snow">
           <div className="mx-auto grid max-w-3xl gap-8 px-5 py-16 sm:px-8 md:grid-cols-[auto_1fr] md:items-start">
@@ -296,68 +296,128 @@ function Unlock() {
 // ─── Share ────────────────────────────────────────────────────────────────────
 
 function ShareBlock({ insights }: { insights: Insight[] }) {
-  const [state, setState] = useState<"idle" | "busy" | "saved" | "error">("idle");
-  const host = useSyncExternalStore(
-    () => () => {},
-    () => window.location.host,
-    () => ""
-  );
+  const [state, setState] = useState<"idle" | "busy" | "error">("idle");
+  const [image, setImage] = useState<{ blob: Blob; url: string } | null>(null);
+  const [sent, setSent] = useState(false);
+  const emberRef = useRef<HTMLDivElement>(null);
+  const cairn = useStored<Stone[]>(KEYS.cairn);
 
-  const share = useCallback(async () => {
+  const make = useCallback(async () => {
     setState("busy");
     try {
-      const { drawShareImage } = await import("@/lib/shareImage");
-      const blob = await drawShareImage(insights, host);
+      const { drawInsightsCard } = await import("@/lib/shareImage");
+      const blob = await drawInsightsCard({
+        insights,
+        words: cairn?.length === 4 ? cairn.map((s) => s.word) : [],
+        emberSvg: emberRef.current?.querySelector("svg")?.outerHTML,
+        host: window.location.host,
+      });
       if (!blob) throw new Error("Could not draw the image");
-      const file = new File([blob], "my-sonder-insights.png", { type: "image/png" });
-      if (navigator.canShare?.({ files: [file] }) && navigator.share) {
-        try {
-          await navigator.share({ files: [file], title: "Three things my guide noticed", text: `Come inward: ${window.location.origin}` });
-          setState("saved");
-        } catch (err) {
-          setState((err as Error)?.name === "AbortError" ? "idle" : "error");
-        }
-      } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "my-sonder-insights.png";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 2000);
-        setState("saved");
-      }
+      setImage({ blob, url: URL.createObjectURL(blob) });
+      setState("idle");
     } catch (err) {
       console.error("Share failed:", err);
       setState("error");
     }
-  }, [insights, host]);
+  }, [insights, cairn]);
+
+  const close = useCallback(() => {
+    setImage((img) => {
+      if (img) URL.revokeObjectURL(img.url);
+      return null;
+    });
+  }, []);
 
   return (
-    <section className="mx-auto max-w-3xl px-5 pb-16 sm:px-8">
+    <section className="mx-auto max-w-3xl px-5 pb-4 pt-6 sm:px-8">
+      <div ref={emberRef} hidden aria-hidden="true">
+        <Ember mood="pleased" size={300} />
+      </div>
       <div className="flex flex-col items-start gap-5 rounded-panel border border-line bg-snow/60 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-7">
-        <div>
-          <h2 className="type-h3 text-ink">Know someone who&rsquo;d get this?</h2>
-          <p className="mt-1 text-slate">
-            {state === "saved"
-              ? "Saved. Your image is in your downloads (or wherever you shared it)."
-              : state === "error"
-              ? "That didn't work. Please try again."
-              : "Save your three insights as an image to share with one person."}
-          </p>
+        <div className="flex items-start gap-4">
+          <EmberAvatar mood="pleased" size={46} />
+          <div>
+            <h2 className="type-h3 text-ink">Did any of these sound like you?</h2>
+            <p className="mt-1 text-slate">
+              {state === "error"
+                ? "That didn't work. Please try again."
+                : sent
+                ? "Shared. Thank you for passing it on."
+                : "Share a card of what I noticed. Only the short lines go on it, nothing private."}
+            </p>
+          </div>
         </div>
-        <button onClick={share} disabled={state === "busy"} className="btn btn-secondary btn-sm shrink-0">
-          {state === "busy" ? (
-            <LoaderCircle size={17} className="animate-spin" aria-hidden="true" />
-          ) : state === "saved" ? (
-            <Check size={17} aria-hidden="true" />
-          ) : (
-            <Share2 size={17} aria-hidden="true" />
-          )}
-          {state === "busy" ? "Making image" : state === "saved" ? "Saved" : "Share my insights"}
+        <button onClick={make} disabled={state === "busy"} className="btn btn-secondary btn-sm shrink-0">
+          {state === "busy" ? <LoaderCircle size={17} className="animate-spin" aria-hidden="true" /> : <Share2 size={17} aria-hidden="true" />}
+          {state === "busy" ? "Making your card" : "Share my insights"}
         </button>
       </div>
+      {image && <ShareSheet image={image} onClose={close} onShared={() => setSent(true)} />}
     </section>
+  );
+}
+
+function ShareSheet({ image, onClose, onShared }: { image: { blob: Blob; url: string }; onClose: () => void; onShared: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const primary = useRef<HTMLButtonElement>(null);
+  const file = new File([image.blob], "what-ember-noticed.png", { type: "image/png" });
+  const canShare = typeof navigator !== "undefined" && !!navigator.share && !!navigator.canShare?.({ files: [file] });
+
+  useEffect(() => {
+    primary.current?.focus();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = overflow;
+    };
+  }, [onClose]);
+
+  async function go() {
+    setBusy(true);
+    if (canShare) {
+      try {
+        await navigator.share({ files: [file], title: "Three things Ember noticed about me", text: `What would Ember notice about you? ${window.location.origin}` });
+        onShared();
+        onClose();
+      } catch (err) {
+        if ((err as Error)?.name !== "AbortError") console.error(err);
+      }
+    } else {
+      const a = document.createElement("a");
+      a.href = image.url;
+      a.download = "what-ember-noticed.png";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      onShared();
+      onClose();
+    }
+    setBusy(false);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-ink/70 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Your share card"
+        className="flex max-h-full w-full max-w-sm flex-col items-center gap-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={image.url} alt="Your share card: three things Ember noticed about you" className="max-h-[70svh] w-auto rounded-2xl shadow-2xl" />
+        <p className="text-center font-sign text-sm text-snow/85">This is exactly what people will see.</p>
+        <div className="flex w-full gap-3">
+          <button onClick={onClose} className="btn btn-quiet flex-1 bg-snow/90">Not now</button>
+          <button ref={primary} onClick={go} disabled={busy} className="btn btn-primary flex-1">
+            {canShare ? <Share2 size={18} aria-hidden="true" /> : <Download size={18} aria-hidden="true" />}
+            {canShare ? "Share" : "Save image"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

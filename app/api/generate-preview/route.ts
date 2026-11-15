@@ -28,8 +28,9 @@ const PREVIEW_TOOL: Anthropic.Tool = {
           properties: {
             title: { type: "string" },
             insight: { type: "string" },
+            shareLine: { type: "string" },
           },
-          required: ["title", "insight"],
+          required: ["title", "insight", "shareLine"],
           additionalProperties: false,
         },
       },
@@ -79,13 +80,26 @@ export async function POST(request: NextRequest) {
       return aiErrorResponse(error);
     }
 
-    const data = extractStructured<{ previewInsights?: { title: string; insight: string }[] }>(response, PREVIEW_TOOL.name);
+    const data = extractStructured<{ previewInsights?: { title: string; insight: string; shareLine?: string }[] }>(response, PREVIEW_TOOL.name);
 
     if (data && Array.isArray(data.previewInsights) && data.previewInsights.length === 3) {
-      return Response.json(data);
+      return Response.json({
+        previewInsights: data.previewInsights.map((c) => ({
+          title: String(c.title ?? "").trim(),
+          insight: String(c.insight ?? "").trim(),
+          shareLine: cleanShareLine(c.shareLine),
+        })),
+      });
     }
     console.warn(`[generate-preview] attempt ${attempt}: unexpected response shape`);
   }
 
   return Response.json({ error: "Your preview didn't come through. Please try again." }, { status: 500 });
+}
+
+/** The share line goes on a public image: one short sentence, no quotes or line breaks. */
+function cleanShareLine(line: unknown): string {
+  if (typeof line !== "string") return "";
+  const text = line.replace(/\s+/g, " ").replace(/^["“”']+|["“”']+$/g, "").trim();
+  return text.length > 140 ? "" : text;
 }
