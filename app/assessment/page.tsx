@@ -7,7 +7,6 @@ import {
   ArrowRight,
   Check,
   Clock,
-  Share2,
   Keyboard,
   RotateCcw,
   ShieldCheck,
@@ -848,12 +847,9 @@ function MarkerCard({
           )}
         </GuideLine>
       )}
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <p className="font-sign text-[0.95rem] text-stone">
-          {last ? stones.map((s) => s.word).join(" · ") : `${remaining} stage${remaining === 1 ? "" : "s"} to go.`}
-        </p>
-        <ShareStoneButton stones={stones} headline={marker?.headline ?? ""} detail={marker?.detail ?? ""} complete={last} />
-      </div>
+      <p className="mt-6 font-sign text-[0.95rem] text-stone">
+        {last ? stones.map((s) => s.word).join(" · ") : `${remaining} stage${remaining === 1 ? "" : "s"} to go.`}
+      </p>
       <CardFooter onBack={onBack}>
         <button onClick={onContinue} className="btn btn-primary" autoFocus>
           {last ? "See your first insights" : "Keep climbing"}
@@ -864,25 +860,6 @@ function MarkerCard({
   );
 }
 
-function ShareStoneButton({ stones, headline, detail, complete }: { stones: ReturnType<typeof cairnFor>; headline: string; detail: string; complete: boolean }) {
-  const [state, setState] = useState<"idle" | "busy" | "done">("idle");
-  return (
-    <button
-      type="button"
-      disabled={state === "busy"}
-      onClick={async () => {
-        setState("busy");
-        const { shareStoryCard } = await import("@/lib/shareImage");
-        const ok = await shareStoryCard({ stones, headline, detail, complete });
-        setState(ok ? "done" : "idle");
-      }}
-      className="btn btn-quiet btn-sm"
-    >
-      {state === "done" ? <Check size={16} aria-hidden="true" /> : <Share2 size={16} aria-hidden="true" />}
-      {state === "done" ? "Saved" : state === "busy" ? "Making card" : complete ? "Share my four stones" : "Share this stone"}
-    </button>
-  );
-}
 
 // ─── Shared bits ──────────────────────────────────────────────────────────────
 

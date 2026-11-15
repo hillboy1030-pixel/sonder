@@ -7,16 +7,19 @@ export const MOCK_PREVIEW = {
       title: "The Quiet Rehearsal",
       insight:
         "Before most hard conversations, you've already had them three times in the car. The version you finally say is gentler than any of the drafts, and nobody knows how much was cut.",
+      shareLine: "I've usually had the hard conversation three times in my head before I say a word.",
     },
     {
       title: "The Glass Wall",
       insight:
         "People experience you as open and easy to talk to, and they're right, up to a point. There's a room past that point where you decide things alone, and very few people have been inside it.",
+      shareLine: "I'm easy to talk to. I'm just not easy to know, and I'm okay with that.",
     },
     {
       title: "Proof of Worth",
       insight:
         "Underneath the drive to do things well is a quieter wish to be needed for who you are rather than what you carry. The to-do list is real, but it's also a place to hide.",
+      shareLine: "I don't just want to be useful. I want to be known.",
     },
   ],
 };

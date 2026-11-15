@@ -168,6 +168,7 @@ export function Ember({
 
   return (
     <svg
+      xmlns="http://www.w3.org/2000/svg"
       viewBox="22 38 76 76"
       width={size}
       height={size}
