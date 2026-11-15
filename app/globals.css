@@ -243,6 +243,19 @@ h1, h2, h3, h4, button, label, input, select, textarea, nav {
   0%, 100% { opacity: 0.55; transform: scale(1); }
   50%      { opacity: 1;    transform: scale(1.06); }
 }
+.summit-flag {
+  transform-box: fill-box;
+  transform-origin: 0% 100%;
+}
+.summit-flag.flag-reached {
+  animation: flag-wave 900ms cubic-bezier(0.3, 0.7, 0.3, 1);
+}
+@keyframes flag-wave {
+  0% { transform: scale(1) rotate(0); }
+  30% { transform: scale(1.18) rotate(-7deg); }
+  60% { transform: scale(1.06) rotate(4deg); }
+  100% { transform: scale(1) rotate(0); }
+}
 @keyframes pop {
   0%   { transform: scale(0.6); opacity: 0; }
   70%  { transform: scale(1.08); opacity: 1; }
