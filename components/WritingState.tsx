@@ -61,10 +61,12 @@ export function ProblemState({
   primary,
   secondary,
   code,
+  detail,
 }: {
   title: string;
   message: string;
   code?: string;
+  detail?: string;
   primary?: { label: string; onClick?: () => void; href?: string };
   secondary?: { label: string; href: string };
 }) {
@@ -80,7 +82,12 @@ export function ProblemState({
           </span>
           <h1 className="type-h2 mt-5 text-ink">{title}</h1>
           <p className="mt-3 text-slate">{message}</p>
-          {code && <p className="mt-2 font-sign text-xs text-stone">Error code: {code}</p>}
+          {code && (
+            <p className="mt-2 font-sign text-xs text-stone">
+              Error code: {code}
+              {detail ? ` (${detail})` : ""}
+            </p>
+          )}
           <div className="mt-7 flex flex-col gap-3 sm:flex-row">
             {primary &&
               (primary.href ? (

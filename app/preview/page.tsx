@@ -52,6 +52,7 @@ export default function PreviewPage() {
   const [fresh, setFresh] = useState<Insight[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [errorCode, setErrorCode] = useState<string | undefined>();
+  const [errorDetail, setErrorDetail] = useState<string | undefined>();
   const [attempt, setAttempt] = useState(0);
   const started = useRef(-1);
   const insights = fresh ?? (attempt === 0 ? cachedInsights : null);
@@ -76,6 +77,7 @@ export default function PreviewPage() {
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
           setErrorCode(data.code);
+          setErrorDetail(data.detail);
           throw new Error(data.error || "Your preview didn't come through. Please try again.");
         }
         return data as { previewInsights: Insight[] };
@@ -96,6 +98,7 @@ export default function PreviewPage() {
         title="Your insights didn't come through"
         message={error}
         code={errorCode}
+        detail={errorDetail}
         primary={{ label: "Try again", onClick: () => (setError(null), setAttempt((a) => a + 1)) }}
         secondary={{ label: "Back to the assessment", href: "/assessment" }}
       />

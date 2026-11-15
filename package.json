@@ -9,7 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.88.0",
+    "@anthropic-ai/sdk": "^1.8.0",
     "@fontsource-variable/literata": "^5.3.0",
     "@fontsource-variable/national-park": "^5.3.0",
     "html2canvas": "^1.4.1",

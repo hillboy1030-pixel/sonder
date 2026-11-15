@@ -6,13 +6,15 @@ import { cleanContext, cleanScores } from "@/lib/server/validate";
 import { contextNeedsCare } from "@/lib/safety";
 import { MOCK_PREVIEW, mockDelay } from "@/lib/server/mockData";
 import { aiErrorResponse } from "@/lib/server/aiErrors";
+import { extractStructured } from "@/lib/server/extract";
 
 // Fast call: only the 3 free preview cards (~15–25s)
 export const maxDuration = 60;
 
 const MAX_ATTEMPTS = 2;
 
-// Forcing a tool call makes the API return structured JSON, so nothing has to be parsed by hand.
+// A strict tool gives structured JSON. (Sonnet 5.5 doesn't allow forcing the tool, so the
+// instructions ask for it and the code retries if the model answers in plain text.)
 const PREVIEW_TOOL: Anthropic.Tool = {
   name: "return_preview_insights",
   description: "Return exactly three preview insight cards.",
@@ -28,13 +30,14 @@ const PREVIEW_TOOL: Anthropic.Tool = {
             insight: { type: "string" },
           },
           required: ["title", "insight"],
+          additionalProperties: false,
         },
-        minItems: 3,
-        maxItems: 3,
       },
     },
     required: ["previewInsights"],
+    additionalProperties: false,
   },
+  strict: true,
 };
 
 export async function POST(request: NextRequest) {
@@ -67,7 +70,8 @@ export async function POST(request: NextRequest) {
         max_tokens: 4000,
         system: PREVIEW_SYSTEM_PROMPT,
         tools: [PREVIEW_TOOL],
-        tool_choice: { type: "tool", name: "return_preview_insights" },
+        tool_choice: { type: "auto" },
+        thinking: { type: "between_tools" },
         messages: [{ role: "user", content: userContent }],
       });
     } catch (error) {
@@ -75,10 +79,7 @@ export async function POST(request: NextRequest) {
       return aiErrorResponse(error);
     }
 
-    const toolUse = response.content.find((b) => b.type === "tool_use");
-    const data = toolUse?.type === "tool_use"
-      ? (toolUse.input as { previewInsights?: { title: string; insight: string }[] })
-      : null;
+    const data = extractStructured<{ previewInsights?: { title: string; insight: string }[] }>(response, PREVIEW_TOOL.name);
 
     if (data && Array.isArray(data.previewInsights) && data.previewInsights.length === 3) {
       return Response.json(data);
