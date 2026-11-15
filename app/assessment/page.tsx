@@ -61,6 +61,7 @@ export default function AssessmentPage() {
   const router = useRouter();
   const [p, setP] = useState<Progress>(START);
   const stored = useStored<Progress>(KEYS.progress);
+  const isTesterBrowser = !!useStored<string>(KEYS.tester);
   const [dismissed, setDismissed] = useState(false);
   const loaded = stored !== undefined;
   const saved = !dismissed && stored && stored.phase !== "welcome" ? stored : null;
@@ -291,7 +292,7 @@ export default function AssessmentPage() {
         </div>
       </main>
 
-      {process.env.NODE_ENV === "development" && <DevFill onFill={finish} />}
+      {(process.env.NODE_ENV === "development" || isTesterBrowser) && <DevFill onFill={finish} />}
     </div>
   );
 }
@@ -830,7 +831,7 @@ function DevFill({ onFill }: { onFill: (p: Progress) => void }) {
       }}
       className="fixed bottom-3 left-3 z-50 rounded-lg bg-ink/80 px-3 py-2 font-sign text-xs text-snow"
     >
-      Dev: fill and finish
+      Tester: skip the questions
     </button>
   );
 }

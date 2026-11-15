@@ -3,6 +3,7 @@ import "@fontsource-variable/national-park";
 import "@fontsource-variable/literata";
 import "@fontsource-variable/literata/wght-italic.css";
 import "./globals.css";
+import { TesterMode } from "@/components/TesterMode";
 
 export const metadata: Metadata = {
   title: "Sonder — Come inward",
@@ -23,7 +24,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className="min-h-screen">{children}</body>
+      <body className="min-h-screen">
+        {children}
+        <TesterMode />
+      </body>
     </html>
   );
 }

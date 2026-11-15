@@ -5,6 +5,7 @@ import { AI_MODEL, MOCK_MODE } from "@/lib/server/config";
 import { cleanContext, cleanScores } from "@/lib/server/validate";
 import { contextNeedsCare } from "@/lib/safety";
 import { checkPurchase } from "@/lib/server/payment";
+import { isTester } from "@/lib/server/tester";
 import { MOCK_REPORT, mockDelay } from "@/lib/server/mockData";
 import { aiErrorResponse } from "@/lib/server/aiErrors";
 import { extractStructured } from "@/lib/server/extract";
@@ -40,7 +41,7 @@ const REPORT_TOOL: Anthropic.Tool = {
 };
 
 export async function POST(request: NextRequest) {
-  let body: { scores?: unknown; context?: unknown; session_id?: unknown };
+  let body: { scores?: unknown; context?: unknown; session_id?: unknown; tester?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -48,7 +49,9 @@ export async function POST(request: NextRequest) {
   }
 
   // ── Payment is verified on the server, every time ──────────────────────────
-  const purchase = await checkPurchase(body.session_id);
+  const purchase = isTester(body.tester)
+    ? ({ ok: true, consume: async () => {} } as const)
+    : await checkPurchase(body.session_id);
   if (!purchase.ok) {
     return Response.json({ error: purchase.error, code: "payment" }, { status: purchase.status });
   }

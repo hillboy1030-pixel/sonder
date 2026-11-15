@@ -99,7 +99,12 @@ function ReportLoader() {
     fetch("/api/generate-report", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scores, context: readJSON(KEYS.context), session_id: sessionId }),
+      body: JSON.stringify({
+        scores,
+        context: readJSON(KEYS.context),
+        session_id: sessionId,
+        tester: readJSON<string>(KEYS.tester) ?? undefined,
+      }),
     })
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
