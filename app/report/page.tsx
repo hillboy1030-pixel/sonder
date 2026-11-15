@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
+  Backpack,
   BookOpen,
   Briefcase,
   Compass,
@@ -14,17 +15,18 @@ import {
   PenLine,
   Printer,
   Route,
-  Sprout,
   Sunrise,
-  User,
+  Users,
   type LucideIcon,
 } from "lucide-react";
-import { Logo, LogoMark } from "@/components/Logo";
+import { Logo } from "@/components/Logo";
 import { SiteFooter } from "@/components/SiteFooter";
 import { WritingState, ProblemState } from "@/components/WritingState";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { SupportNote } from "@/components/SupportNote";
 import { contextNeedsCare } from "@/lib/safety";
+import { GUIDE } from "@/lib/guide";
+import { GuideLine, GuideMark } from "@/components/Guide";
 import { JournalPageMock } from "@/components/JournalBits";
 import { KEYS, readJSON, writeJSON } from "@/lib/storage";
 import { useStored } from "@/lib/useStored";
@@ -34,26 +36,16 @@ type Insight = { title: string; insight: string };
 type Section = { title: string; content: string };
 type Report = { sections: Section[] };
 
-const MESSAGES = [
-  "Settling into your answers…",
-  "Finding where your traits meet…",
-  "Writing who you are…",
-  "Writing how you work and how you love…",
-  "Naming your growth edges…",
-  "Looking at how you read other people…",
-  "Finding the whole picture…",
-  "Choosing books, prompts, and practices for your next 90 days…",
-  "Reading it all back one more time…",
-];
+const MESSAGES = GUIDE.reportWriting;
 
 const ICONS: Record<SectionIcon, LucideIcon> = {
-  user: User,
+  eye: Eye,
+  backpack: Backpack,
   briefcase: Briefcase,
   heart: Heart,
   compass: Compass,
-  sprout: Sprout,
   route: Route,
-  eye: Eye,
+  users: Users,
   mountain: Mountain,
   sunrise: Sunrise,
 };
@@ -148,7 +140,7 @@ function ReportLoader() {
   if (!report) {
     return (
       <WritingState
-        title="Your report is being written"
+        title="Your guide is writing to you"
         messages={MESSAGES}
         seconds={150}
         note="This takes 2 to 3 minutes. Keep this page open."
@@ -218,6 +210,9 @@ function FullReport({ report }: { report: Report }) {
         <section className="mx-auto max-w-6xl px-5 pb-10 pt-14 sm:px-8 sm:pt-20">
           <p className="type-kicker">{today}</p>
           <h1 className="type-display mt-4 max-w-[12ch] text-ink">Your Sonder Report</h1>
+          <GuideLine size="lg" className="mt-8 max-w-2xl">
+            {GUIDE.reportOpen}
+          </GuideLine>
           {needsCare && (
             <div className="no-print mt-8 max-w-2xl">
               <SupportNote compact />
@@ -280,8 +275,9 @@ function FullReport({ report }: { report: Report }) {
             ))}
 
             <div className="mt-20 flex flex-col items-center text-center">
-              <LogoMark className="h-9 w-9 text-pine" />
-              <p className="mt-4 font-read text-xl italic text-slate">You are sondering. That is enough.</p>
+              <GuideMark size={56} />
+              <p className="mt-4 font-read text-xl italic text-ink">{GUIDE.reportClose}</p>
+              <p className="mt-1 font-sign text-sm font-semibold text-pine-2">Your guide</p>
               <button onClick={download} disabled={downloading} className="no-print btn btn-dark mt-8">
                 {downloading ? <LoaderCircle size={18} className="animate-spin" aria-hidden="true" /> : <Download size={18} aria-hidden="true" />}
                 Download your report

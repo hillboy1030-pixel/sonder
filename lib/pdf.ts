@@ -237,7 +237,7 @@ export async function generatePDF(report: Report, insights: PreviewInsight[]): P
   doc.setFont("times", "italic");
   doc.setFontSize(11);
   tc(STONE);
-  doc.text(`Generated from your 72 answers on ${TODAY}`, W / 2, 446, { align: "center" });
+  doc.text(`Generated from your answers on ${TODAY}`, W / 2, 446, { align: "center" });
 
   // Domain on cover (no page number; addFooter is gated by pastCover)
   doc.setFont("times", "normal");

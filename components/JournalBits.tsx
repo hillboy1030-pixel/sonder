@@ -16,7 +16,11 @@ export function JournalPageMock({ className = "" }: { className?: string }) {
           <p className="font-sign text-sm font-semibold text-pine-2">Climb</p>
           <p className="font-sign text-sm text-stone">Day 23 of 90</p>
         </div>
-        <p className="mt-6 font-sign text-[0.82rem] font-semibold text-ember">Today&rsquo;s challenge</p>
+        <p className="mt-6 font-sign text-[0.82rem] font-semibold text-ember">From your guide</p>
+        <p className="mt-1.5 font-read text-[1rem] italic leading-snug text-slate">
+          You don&rsquo;t owe anyone an instant yes. A pause isn&rsquo;t a no. It&rsquo;s room to choose.
+        </p>
+        <p className="mt-5 font-sign text-[0.82rem] font-semibold text-ember">Today&rsquo;s challenge</p>
         <p className="mt-1.5 font-read text-[1.15rem] leading-snug">
           Before you agree to anything today, say &ldquo;let me check&rdquo; and wait an hour.
         </p>

@@ -34,6 +34,7 @@ export const INTAKE_KEYS = [
   "tooMuch",
   "worstSelf",
   "ninetyDayHope",
+  "guideStyle",
 ] as const;
 
 export type IntakeKey = (typeof INTAKE_KEYS)[number];
@@ -145,6 +146,19 @@ export const INTAKE_STEPS: IntakeStep[] = [
     help: "This becomes the destination of your journey.",
     placeholder: "I'd like to…",
     maxLength: 300,
+  },
+  {
+    key: "guideStyle",
+    kind: "single",
+    prompt: "Last one. What do you need from your guide right now?",
+    help: "Your guide will speak to you this way, in your report and beyond.",
+    options: [
+      "Push me. I can take it.",
+      "Steady me. Go gently.",
+      "Help me see clearly. Just tell me the truth.",
+      "Hold me to it. Keep me accountable.",
+    ],
+    required: true,
   },
 ];
 

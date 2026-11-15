@@ -2,6 +2,9 @@ import Link from "next/link";
 import {
   ArrowRight,
   BookOpen,
+  Footprints,
+  HeartHandshake,
+  MessageCircleQuestion,
   ChevronDown,
   Clock,
   Eye,
@@ -18,6 +21,8 @@ import { WaitlistForm } from "@/components/WaitlistForm";
 import { ChapterIcon } from "@/components/ChapterIcon";
 import { JournalPageMock, JOURNAL_PHASES } from "@/components/JournalBits";
 import { REPORT_PRICE_LABEL } from "@/lib/pricing";
+import { GuideLine } from "@/components/Guide";
+import { REPORT_SECTIONS } from "@/lib/reportSections";
 import type { ChapterId } from "@/lib/chapters";
 
 export default function Home() {
@@ -25,6 +30,7 @@ export default function Home() {
     <div className="flex min-h-svh flex-col">
       <SiteHeader variant="overlay" />
       <Hero />
+      <Guide />
       <Trail />
       <Chapters />
       <Journal />
@@ -48,7 +54,7 @@ function Hero() {
         </p>
         <h1 className="type-display mt-7 animate-rise">Come inward.</h1>
         <p className="type-lede mt-6 max-w-xl text-snow/85">
-          Answer 72 research-backed questions and share what you&rsquo;re carrying right now. At the
+          Answer 56 research-backed questions and share what you&rsquo;re carrying right now. At the
           top, you&rsquo;ll get a written portrait of how you think, work, love, and grow.
         </p>
         <div className="mt-9 flex flex-col gap-3 sm:flex-row">
@@ -62,7 +68,7 @@ function Hero() {
         </div>
         <ul className="type-meta mt-8 flex flex-wrap gap-x-6 gap-y-2 text-snow/80">
           <li className="flex items-center gap-2">
-            <Clock size={16} aria-hidden="true" /> About 15 minutes
+            <Clock size={16} aria-hidden="true" /> About 12 minutes
           </li>
           <li className="flex items-center gap-2">
             <Eye size={16} aria-hidden="true" /> First three insights free
@@ -76,6 +82,48 @@ function Hero() {
   );
 }
 
+// ─── Your guide ───────────────────────────────────────────────────────────────
+
+const GUIDE_TRAITS = [
+  { icon: HeartHandshake, title: "Honest, never harsh", body: "Names your patterns plainly and stays kind about it." },
+  { icon: MessageCircleQuestion, title: "Asks before telling", body: "The best insights are the ones you find yourself. Your guide asks the questions that get you there." },
+  { icon: Footprints, title: "Always a next step", body: "Every insight comes with something small to try, today." },
+];
+
+function Guide() {
+  return (
+    <section className="border-b border-line/70 bg-snow">
+      <div className="mx-auto grid max-w-6xl gap-12 px-6 py-24 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-20 lg:py-28">
+        <div>
+          <h2 className="type-h1 text-ink">A guide, not a grade.</h2>
+          <p className="type-lede mt-5 max-w-xl text-slate">
+            Most personality tests hand you a label and leave. Sonder gives you a guide: a steady
+            voice that reads your answers, tells you the truth kindly, and walks with you while you
+            do something about it.
+          </p>
+          <GuideLine size="lg" className="mt-10 max-w-xl">
+            I won&rsquo;t tell you who to be. I&rsquo;ll show you who you already are, and walk with you
+            while you decide what to do about it.
+          </GuideLine>
+        </div>
+        <ul className="space-y-8 lg:pt-3">
+          {GUIDE_TRAITS.map((t) => (
+            <li key={t.title} className="flex gap-4">
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-mist text-pine">
+                <t.icon size={22} strokeWidth={1.9} aria-hidden="true" />
+              </span>
+              <div>
+                <h3 className="type-h3 text-ink">{t.title}</h3>
+                <p className="mt-1 text-slate">{t.body}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
 // ─── How it works: the trail in order ─────────────────────────────────────────
 
 const STAGES = [
@@ -83,35 +131,35 @@ const STAGES = [
     icon: Tent,
     name: "Basecamp",
     title: "Tell us where you are",
-    body: "Twelve quick questions about your life and what you're working through. Answer only what feels right.",
+    body: "Thirteen quick questions about your life, what you're working through, and what you need from your guide.",
     meta: "3 minutes",
   },
   {
     icon: Mountain,
     name: "The climb",
     title: "Four short chapters",
-    body: "72 statements drawn from established personality, career, relationship, and strengths research. Each chapter ends with a trail marker that shows what's taking shape.",
-    meta: "10 minutes",
+    body: "56 statements drawn from established personality, career, relationship, and strengths research. Each chapter ends with a trail marker that shows what's taking shape.",
+    meta: "9 minutes",
   },
   {
     icon: Sunrise,
     name: "First light",
     title: "Read three insights, free",
-    body: "Sonder writes three insights from your answers before you pay anything. If they don't land, stop there.",
+    body: "Your guide shares the first three things they notice before you pay anything. If they don't land, stop there.",
     meta: "Free",
   },
   {
     icon: Flag,
     name: "The summit",
     title: "Your full Sonder Report",
-    body: "Nine sections on how you think, work, love, and grow, ending with books, prompts, and daily practices for your next 90 days. Yours to keep as a PDF.",
+    body: "A nine-part letter from your guide: what they see in you, what you're carrying, how you work and love, where you get stuck, and your first 90 days. Yours to keep as a PDF.",
     meta: REPORT_PRICE_LABEL,
   },
   {
     icon: BookOpen,
     name: "The journey",
     title: "The 90-day journal",
-    body: "Your report, turned into a printed journal: one small challenge a day, written for your patterns and what you're facing now.",
+    body: "Ninety days with your guide, printed: a short lesson, one small challenge, and an evening question for each day.",
     meta: "Coming soon",
     soon: true,
   },
@@ -171,7 +219,7 @@ function Trail() {
 // ─── What it measures ─────────────────────────────────────────────────────────
 
 const MEASURES: { id: ChapterId; name: string; topic: string; framework: string; sample: string }[] = [
-  { id: "terrain", name: "The terrain", topic: "Personality", framework: "Big Five (IPIP-NEO)", sample: "I enjoy thinking about complex ideas." },
+  { id: "terrain", name: "The terrain", topic: "Personality", framework: "Big Five (Mini-IPIP)", sample: "I have a vivid imagination." },
   { id: "path", name: "The path", topic: "Work you're drawn to", framework: "Holland codes (O*NET)", sample: "Teach someone how to do something." },
   { id: "company", name: "The company you keep", topic: "Closeness in relationships", framework: "Attachment (ECR)", sample: "I find it difficult to depend on other people." },
   { id: "carry", name: "What you carry", topic: "Character strengths", framework: "VIA strengths", sample: "I finish whatever I start." },
@@ -219,9 +267,9 @@ function Journal() {
           <p className="type-kicker text-gold-hi">Coming soon</p>
           <h2 className="type-h1 mt-3">Ninety days, one page at a time.</h2>
           <p className="type-lede mt-5 max-w-lg text-snow/80">
-            Your report shows you the pattern. The Sonder Journal helps you practice the change: a
-            printed book written from your report and what you&rsquo;re working through, with one
-            small challenge for each of the next 90 days.
+            Your report shows you the pattern. The Sonder Journal helps you practice the change, with
+            your guide on every page: a short lesson, one small challenge, and an evening question
+            for each of the next 90 days.
           </p>
           <ol className="mt-9 space-y-5">
             {JOURNAL_PHASES.map((ph) => (
@@ -252,6 +300,10 @@ function Journal() {
 
 const FAQS = [
   {
+    q: "Who is the guide?",
+    a: "Your guide is the voice of Sonder: an AI shaped to read your answers the way a wise, steady mentor would. Honest, warm, never harsh, and always pointing to a next step. Your guide isn't a person and isn't a therapist.",
+  },
+  {
     q: "Is Sonder therapy or a diagnosis?",
     a: "No. Sonder is a tool for self-reflection. It describes patterns, not disorders, and it isn't a substitute for a licensed professional. If you're in crisis, call or text 988 (US).",
   },
@@ -265,7 +317,7 @@ const FAQS = [
   },
   {
     q: "What's in the full report?",
-    a: "Nine sections: who you are, how you work, how you love, what drives you, your growth edges, your path forward, how you read other people, the whole picture, and a plan for your next 90 days with books, journal prompts, and daily practices.",
+    a: `A letter from your guide in nine parts: ${REPORT_SECTIONS.map((s) => s.title.toLowerCase()).join(", ")}. The last part includes books, journal prompts, and daily practices.`,
   },
   {
     q: "Can I take it again later?",
@@ -302,7 +354,7 @@ function Closing() {
       <MountainScene quiet className="absolute inset-x-0 bottom-0 -z-10 h-[62%] w-full" />
       <div className="mx-auto max-w-6xl px-6 pb-56 pt-20 text-center sm:px-8 sm:pb-72">
         <h2 className="type-h1 text-ink">Start where you are.</h2>
-        <p className="type-lede mx-auto mt-4 max-w-md text-slate">Fifteen minutes. Three free insights. No account.</p>
+        <p className="type-lede mx-auto mt-4 max-w-md text-slate">Twelve minutes. Three free insights. No account.</p>
         <Link href="/assessment" className="btn btn-primary mt-8">
           Start the climb
           <ArrowRight size={18} strokeWidth={2.25} aria-hidden="true" />

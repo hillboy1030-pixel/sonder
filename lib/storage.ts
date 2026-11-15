@@ -1,7 +1,7 @@
 // Everything Sonder keeps lives in the visitor's own browser, under these keys.
 
 export const KEYS = {
-  progress: "sonder_progress",
+  progress: "sonder_progress_v2",
   scores: "sonder_scores",
   context: "sonder_context",
   markers: "sonder_markers",

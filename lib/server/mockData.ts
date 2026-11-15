@@ -26,7 +26,7 @@ const para = (s: string) => s.trim().replace(/\s+/g, " ");
 export const MOCK_REPORT = {
   sections: [
     {
-      title: "Who You Are",
+      title: "What I see in you",
       content: [
         para(`You walk into a room and read it before you speak. Who is tired, who is pretending, where the tension sits. It happens so fast you rarely notice you've done it, and by the time you say hello you've already adjusted your voice to fit.`),
         para(`The combination that defines you is curiosity paired with care. You want to understand things all the way down, and you want the people around you to be okay. Most days those two pull in the same direction. On the hard days they don't, and you choose care, and something in you goes unfed.`),
@@ -34,7 +34,15 @@ export const MOCK_REPORT = {
       ].join("\n\n"),
     },
     {
-      title: "How You Work",
+      title: "What you're carrying",
+      content: [
+        para(`You're starting something new at work while trying to stay present at home, and from the outside you look like you're handling it. You probably are. You're good at reading what a new room needs and becoming that, fast.`),
+        para(`Here's what I'd want you to notice: handling it and carrying it alone have started to look the same to you. You come home with the day still on you, and instead of setting it down you get useful again. Dishes, homework, a fix for someone's problem.`),
+        para(`What would happen if, one evening this week, you walked in and said "today was a lot" before you did anything helpful? Not to be rescued. Just to be known.`),
+      ].join("\n\n"),
+    },
+    {
+      title: "The work that fits you",
       content: [
         para(`Work has to mean something to you, and it has to involve people. You do your best work when you're helping someone see a path they couldn't see alone, which is why you light up in conversations that other people find draining.`),
         para(`The blind spot is that you treat your own energy as unlimited. You will take the extra call, cover the extra shift, and say "no problem" in a voice that means it, then wonder on Thursday night why you're short with the people you love most.`),
@@ -42,21 +50,21 @@ export const MOCK_REPORT = {
       ].join("\n\n"),
     },
     {
-      title: "How You Love",
+      title: "How you let people in",
       content: [
         para(`In close relationships you are generous and steady. You remember what people said three weeks ago and you show up. What fewer people see is how carefully you manage how much you ask for in return.`),
         para(`You long to be known without having to explain yourself, and you quietly fear that if you stopped being useful the closeness would thin out. So you stay useful. It works, and it costs you the experience of being cared for when you have nothing to offer.`),
       ].join("\n\n"),
     },
     {
-      title: "What Drives You",
+      title: "What you're really after",
       content: [
         para(`Curiosity gives you a world that never gets boring, and costs you the ability to leave a question alone at midnight. Kindness gives you people who trust you completely, and costs you the word no. Perspective makes you the person others call, and leaves you with no one you call.`),
         para(`Underneath all three is one need: to matter in a way that doesn't depend on being impressive. You're trying to build a life where being yourself is enough.`),
       ].join("\n\n"),
     },
     {
-      title: "Your Growth Edges",
+      title: "Where you get stuck",
       content: [
         para(`**Saying yes before you've checked.** It's Tuesday afternoon, someone asks for help, and you've agreed before you've looked at your week. It makes sense: helping is how you feel useful. It has already cost you rest you needed. What would happen if you said "let me check" and meant it?`),
         para(`**Thinking instead of feeling.** When something hurts, you analyze it until it's interesting instead of painful. It makes sense: understanding feels like control. It has cost you the relief of just being sad. What are you avoiding by being so reasonable?`),
@@ -64,17 +72,7 @@ export const MOCK_REPORT = {
       ].join("\n\n"),
     },
     {
-      title: "Your Path Forward",
-      content: [
-        para(`The work of this chapter isn't doing more. It's letting yourself be seen at less than your best and finding out that people stay.`),
-        para(`Your years of practicing a craft already taught you this: progress came from honest reps, not from looking good. The same is true here.`),
-        `**What would you stop doing if you trusted people to love you anyway?**`,
-        `**Who in your life has never seen you need something?**`,
-        `**What part of you only shows up when no one is counting on you?**`,
-      ].join("\n\n"),
-    },
-    {
-      title: "The Sonder Lens",
+      title: "Other people's trails",
       content: [
         para(`When someone goes quiet after you've helped them, you read it as disappointment. More often they are moved and don't know what to say.`),
         para(`When a friend doesn't call back, you assume you've asked too much. Usually their week is just as full as yours.`),
@@ -83,14 +81,14 @@ export const MOCK_REPORT = {
       ].join("\n\n"),
     },
     {
-      title: "The Whole Picture",
+      title: "The paradox you carry",
       content: [
         para(`The thing that makes you easy to love is the same thing that makes you hard to reach. Your care is real, and it is also a wall.`),
         para(`Picture an ordinary evening: dishes done, the house finally quiet, and someone you love asking how you are. Then picture answering with the true thing instead of the useful one. That's the whole journey, right there.`),
       ].join("\n\n"),
     },
     {
-      title: "Your Next 90 Days",
+      title: "Your first 90 days",
       content: [
         `**Books**`,
         `**The Gifts of Imperfection** — Brené Brown. A short, warm book about letting yourself be seen before you're finished. It speaks directly to the habit of earning your place.`,

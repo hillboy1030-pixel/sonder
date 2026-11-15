@@ -3,6 +3,7 @@ import Link from "next/link";
 import {
   ArrowRight,
   CalendarCheck,
+  Lamp,
   Flag,
   Mail,
   NotebookPen,
@@ -15,6 +16,8 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { JournalPageMock, JOURNAL_PHASES } from "@/components/JournalBits";
+import { GuideLine } from "@/components/Guide";
+import { GUIDE } from "@/lib/guide";
 
 export const metadata: Metadata = {
   title: "The Sonder Journal — 90 days, one page at a time",
@@ -23,10 +26,12 @@ export const metadata: Metadata = {
 };
 
 const INSIDE = [
+  { icon: Lamp, title: "A lesson from your guide", body: "A few honest lines each morning, written for your patterns and what you're working through." },
   { icon: Signpost, title: "A daily challenge", body: "One small, specific thing to try each day, chosen for your patterns. Five minutes, not fifty." },
   { icon: PenLine, title: "A question for the evening", body: "A short prompt about how the challenge went, with room to write." },
   { icon: CalendarCheck, title: "Weekly check-ins", body: "Every seventh day, look back at the week and notice what's shifting." },
   { icon: Flag, title: "A first and last letter", body: "On day 1 you write to who you'll be on day 90. On day 90 you write back." },
+  { icon: NotebookPen, title: "Room to write", body: "Lined space every day. The journal is for you, not for anyone else to read." },
 ];
 
 const STEPS = [
@@ -48,10 +53,12 @@ export default function JournalPage() {
             <p className="type-kicker">The Sonder Journal, coming soon</p>
             <h1 className="type-h1 mt-3 text-ink">Ninety days, one page at a time.</h1>
             <p className="type-lede mt-5 max-w-xl text-slate">
-              Your report shows you the pattern. The journal is where you practice the change. It&rsquo;s
-              a printed book written from your Sonder Report and the thing you&rsquo;re working through,
-              with one small challenge for each of the next 90 days.
+              Your report shows you the pattern. The journal is where you practice the change, with
+              your guide on every page: a short lesson, one small challenge, and an evening question
+              for each of the next 90 days, written from your report and what you&rsquo;re working
+              through.
             </p>
+            <GuideLine className="mt-8 max-w-xl">{GUIDE.journal}</GuideLine>
             <div className="mt-9 max-w-lg">
               <WaitlistForm tone="light" id="journal-top" />
             </div>
@@ -89,7 +96,7 @@ export default function JournalPage() {
         {/* Inside */}
         <section className="mx-auto max-w-6xl px-6 py-24 sm:px-8">
           <h2 className="type-h1 max-w-2xl text-ink">What&rsquo;s on the pages</h2>
-          <ul className="mt-12 grid gap-x-12 gap-y-10 sm:grid-cols-2">
+          <ul className="mt-12 grid gap-x-12 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
             {INSIDE.map((it) => (
               <li key={it.title} className="flex gap-5">
                 <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-snow text-pine shadow-[0_8px_20px_-14px_rgb(33_63_53/0.6)]">
