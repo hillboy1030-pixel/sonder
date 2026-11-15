@@ -1,9 +1,16 @@
 import { REPORT_PRICE_CENTS } from "@/lib/pricing";
 import { MOCK_MODE, originFrom } from "@/lib/server/config";
 import { MOCK_SESSION_ID, REPORT_PRODUCT_TAG, stripe } from "@/lib/server/payment";
+import { isTester } from "@/lib/server/tester";
 
 export async function POST(request: Request) {
   const origin = originFrom(request);
+  const body = await request.json().catch(() => ({}));
+
+  // Pre-launch testers skip checkout entirely.
+  if (isTester(body?.tester)) {
+    return Response.json({ url: `${origin}/report?session_id=tester` });
+  }
 
   if (MOCK_MODE) {
     return Response.json({ url: `${origin}/report?session_id=${MOCK_SESSION_ID}` });

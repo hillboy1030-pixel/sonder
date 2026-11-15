@@ -215,7 +215,11 @@ function Unlock() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/create-checkout", { method: "POST" });
+      const res = await fetch("/api/create-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tester: readJSON<string>(KEYS.tester) ?? undefined }),
+      });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.url) throw new Error(data.error || "Checkout couldn't open. Please try again.");
       window.location.href = data.url;
