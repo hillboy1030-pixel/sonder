@@ -1,12 +1,9 @@
 "use client";
 
-// Ember: Sonder's guide. A small, old, living flame that lives in a trail
-// lantern. Warm and wise, not cute: calm heavy-lidded eyes, an understated
+// Ember: Sonder's guide. A small, very old flame, drawn in a warm disc of
+// light with a pine rim. Warm and wise, not cute: calm eyes, an understated
 // mouth, and most of the feeling carried by the flame's shape and light.
-//
-// Two framings of the same drawing:
-//   - "lantern": the whole lantern (welcome, loading, summit, landing)
-//   - "portrait": a close crop of Ember's face for small avatars
+// One drawing at every size: avatars, welcome, loading, summit, landing.
 
 import { useId } from "react";
 
@@ -155,44 +152,44 @@ function Sparks({ id }: { id: string }) {
 export function Ember({
   mood = "calm",
   size = 120,
-  framing = "lantern",
   className = "",
   title,
 }: {
   mood?: EmberMood;
   size?: number;
-  framing?: "lantern" | "portrait";
   className?: string;
   title?: string;
 }) {
   const uid = useId().replace(/:/g, "");
   const g = (n: string) => `${n}-${uid}`;
-  const portrait = framing === "portrait";
-  const viewBox = portrait ? "29 43 62 62" : "0 0 120 136";
-  const height = portrait ? size : Math.round((size * 136) / 120);
   const tall = mood === "celebrating" || mood === "writing" || mood === "pleased";
   const low = mood === "gentle";
+  const scale = (tall ? 1.02 : low ? 0.93 : 0.98).toFixed(3);
 
   return (
     <svg
-      viewBox={viewBox}
+      viewBox="22 38 76 76"
       width={size}
-      height={height}
-      className={className}
+      height={size}
+      className={`shrink-0 ${className}`}
       role={title ? "img" : undefined}
       aria-hidden={title ? undefined : true}
       aria-label={title}
       focusable="false"
     >
       <defs>
-        <radialGradient id={g("halo")} cx="50%" cy="55%" r="50%">
-          <stop offset="0%" stopColor="#FFD98A" stopOpacity={0.55} />
-          <stop offset="100%" stopColor="#FFD98A" stopOpacity={0} />
+        <radialGradient id={g("rim")} cx="50%" cy="40%" r="60%">
+          <stop offset="0%" stopColor="#3A5F4F" />
+          <stop offset="100%" stopColor="#1B342C" />
         </radialGradient>
-        <radialGradient id={g("glass")} cx="50%" cy="62%" r="65%">
-          <stop offset="0%" stopColor="#FFF0C9" />
-          <stop offset="55%" stopColor="#F9D493" />
-          <stop offset="100%" stopColor="#D99A47" />
+        <radialGradient id={g("glow")} cx="50%" cy="64%" r="58%">
+          <stop offset="0%" stopColor="#FFF3D3" />
+          <stop offset="50%" stopColor="#F9D898" />
+          <stop offset="100%" stopColor="#DFA052" />
+        </radialGradient>
+        <radialGradient id={g("halo")} cx="50%" cy="60%" r="50%">
+          <stop offset="0%" stopColor="#FFF7E2" stopOpacity={0.75} />
+          <stop offset="100%" stopColor="#FFF7E2" stopOpacity={0} />
         </radialGradient>
         <linearGradient id={g("flame")} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#F59A3A" />
@@ -204,79 +201,49 @@ export function Ember({
           <stop offset="60%" stopColor="#FFE3A3" />
           <stop offset="100%" stopColor="#FFD079" stopOpacity={0.9} />
         </radialGradient>
-        <linearGradient id={g("brass")} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#E3B867" />
-          <stop offset="100%" stopColor="#A7742A" />
-        </linearGradient>
-        <linearGradient id={g("iron")} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#4A5D6B" />
-          <stop offset="100%" stopColor="#2C3A44" />
-        </linearGradient>
+        <clipPath id={g("clip")}>
+          <circle cx="60" cy="76" r="33.5" />
+        </clipPath>
       </defs>
 
-      {/* Warm halo */}
-      <circle cx="60" cy="76" r={portrait ? 30 : 56} fill={`url(#${g("halo")})`} className="ember-glow" />
-
-      {!portrait && (
-        <g>
-          {/* Wire bail and ring */}
-          <path d="M41 25 C40 6, 80 6, 79 25" fill="none" stroke={`url(#${g("iron")})`} strokeWidth="3.6" strokeLinecap="round" />
-          <circle cx="60" cy="8.5" r="3.4" fill="none" stroke="#3B4D5B" strokeWidth="2.6" />
-          {/* Roof */}
-          <path d="M33 33 L44 21 H76 L87 33 Z" fill={`url(#${g("iron")})`} />
-          <rect x="52" y="15" width="16" height="7" rx="2" fill="#3B4D5B" />
-          <rect x="29" y="31.5" width="62" height="6" rx="3" fill={`url(#${g("brass")})`} />
+      {/* Pine rim and the warm disc of light Ember lives in */}
+      <circle cx="60" cy="76" r="37.5" fill={`url(#${g("rim")})`} />
+      <circle cx="60" cy="76" r="33.5" fill={`url(#${g("glow")})`} />
+      <g clipPath={`url(#${g("clip")})`}>
+        <circle cx="60" cy="82" r="26" fill={`url(#${g("halo")})`} className="ember-glow" />
+        {/* The flame, centred in the disc */}
+        <g transform={`translate(60 78.5) scale(${scale}) translate(-60 -76)`}>
+          <g className="ember-flicker" style={{ transformOrigin: "60px 104px" }}>
+            <path
+              d="M60 45 C63.5 54 76.5 62 77.5 79 C78.5 94 70 104 60 104 C50 104 41.5 94 42.5 79 C43.3 68 49.5 61.5 53.5 55.5 C54.2 61.5 57 64 59.8 60.8 C61.2 55.6 59 50.5 60 45 Z"
+              fill={`url(#${g("flame")})`}
+            />
+            <path
+              d="M60 63 C66 70 71.5 76 71.5 86 C71.5 96 66 101 60 101 C54 101 48.5 96 48.5 86 C48.5 78 53 72 56 67.5 C57 71 59 72 60 69 Z"
+              fill={`url(#${g("core")})`}
+            />
+            <Eyes mood={mood} />
+            <Mouth mood={mood} />
+            <Wisp mood={mood} />
+          </g>
+          {(mood === "writing" || mood === "celebrating") && <Sparks id={uid} />}
         </g>
-      )}
-
-      {/* Glass */}
-      <rect x="32" y="37.5" width="56" height="70" rx="13" fill={`url(#${g("glass")})`} />
-
-      {/* The flame */}
-      <g
-        className="ember-flicker"
-        style={{ transformOrigin: "60px 104px", transform: tall ? "scale(1.06)" : low ? "scale(0.94)" : undefined }}
-      >
-        <path
-          d="M60 45 C63.5 54 76.5 62 77.5 79 C78.5 94 70 104 60 104 C50 104 41.5 94 42.5 79 C43.3 68 49.5 61.5 53.5 55.5 C54.2 61.5 57 64 59.8 60.8 C61.2 55.6 59 50.5 60 45 Z"
-          fill={`url(#${g("flame")})`}
-        />
-        <path
-          d="M60 63 C66 70 71.5 76 71.5 86 C71.5 96 66 101 60 101 C54 101 48.5 96 48.5 86 C48.5 78 53 72 56 67.5 C57 71 59 72 60 69 Z"
-          fill={`url(#${g("core")})`}
-        />
-        <Eyes mood={mood} />
-        <Mouth mood={mood} />
-        <Wisp mood={mood} />
       </g>
-      {(mood === "writing" || mood === "celebrating") && <Sparks id={uid} />}
-
-      {!portrait && (
-        <g>
-          {/* Glass frame and guard wires, drawn over the flame edges */}
-          <rect x="32" y="37.5" width="56" height="70" rx="13" fill="none" stroke={`url(#${g("iron")})`} strokeWidth="3" />
-          <path d="M40.5 38 C37.5 56 37.5 89 40.5 107" fill="none" stroke="#3B4D5B" strokeWidth="2" opacity="0.85" />
-          <path d="M79.5 38 C82.5 56 82.5 89 79.5 107" fill="none" stroke="#3B4D5B" strokeWidth="2" opacity="0.85" />
-          <path d="M36 44 C37 41 39 39.5 42 39" fill="none" stroke="#FFFFFF" strokeWidth="1.6" strokeLinecap="round" opacity="0.55" />
-          {/* Base */}
-          <rect x="29" y="106" width="62" height="6" rx="3" fill={`url(#${g("brass")})`} />
-          <path d="M33.5 112 H86.5 L82.5 125 C81.8 127.6 79.8 129 77.2 129 H42.8 C40.2 129 38.2 127.6 37.5 125 Z" fill={`url(#${g("iron")})`} />
-          <path d="M40 118 H80" stroke="#5A6E7C" strokeWidth="1.4" opacity="0.7" />
-        </g>
-      )}
+      {/* A soft highlight on the rim */}
+      <path d="M36 62 A28 28 0 0 1 50 47" fill="none" stroke="#FFFFFF" strokeWidth="1.4" strokeLinecap="round" opacity="0.35" />
     </svg>
   );
 }
 
-/** Ember's face in a pine circle, for small avatars next to the guide's words. */
+/** Ember with a soft shadow, for avatars next to the guide's words. */
 export function EmberAvatar({ mood = "calm", size = 48, className = "" }: { mood?: EmberMood; size?: number; className?: string }) {
   return (
     <span
-      className={`relative grid shrink-0 place-items-center overflow-hidden rounded-full bg-[radial-gradient(circle_at_50%_62%,#3a5f4f,#213F35_68%)] shadow-[0_8px_20px_-10px_rgb(33_63_53/0.85)] ring-1 ring-black/5 ${className}`}
+      className={`relative grid shrink-0 place-items-center rounded-full shadow-[0_8px_20px_-10px_rgb(33_63_53/0.85)] ${className}`}
       style={{ width: size, height: size }}
       aria-hidden="true"
     >
-      <Ember mood={mood} framing="portrait" size={size} />
+      <Ember mood={mood} size={size} />
     </span>
   );
 }

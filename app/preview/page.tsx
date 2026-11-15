@@ -27,13 +27,9 @@ import { GuideLine } from "@/components/Guide";
 import { KEYS, readJSON, writeJSON } from "@/lib/storage";
 import { useStored } from "@/lib/useStored";
 import { REPORT_PRICE_LABEL } from "@/lib/pricing";
-import type { ChapterId } from "@/lib/chapters";
 import { REPORT_SECTIONS } from "@/lib/reportSections";
-import type { Stone } from "@/lib/cairn";
-import { Cairn } from "@/components/Cairn";
 
 type Insight = { title: string; insight: string };
-type Marker = { chapter: ChapterId; headline: string; detail: string };
 
 const MESSAGES = GUIDE.previewWriting;
 
@@ -120,8 +116,6 @@ export default function PreviewPage() {
 // ─── The preview ──────────────────────────────────────────────────────────────
 
 function Preview({ insights }: { insights: Insight[] }) {
-  const markers = useStored<Marker[]>(KEYS.markers) ?? [];
-  const cairn = useStored<Stone[]>(KEYS.cairn);
   const needsCare = contextNeedsCare(useStored<Record<string, string>>(KEYS.context));
 
   return (
@@ -147,7 +141,6 @@ function Preview({ insights }: { insights: Insight[] }) {
 
         <Unlock />
 
-        {cairn && cairn.length === 4 && <CairnSection stones={cairn} markers={markers} />}
 
         <ShareBlock insights={insights} />
 
@@ -220,51 +213,6 @@ function InsightCard({ insight, index }: { insight: Insight; index: number }) {
 }
 
 // ─── Your cairn ───────────────────────────────────────────────────────────────
-
-function CairnSection({ stones, markers }: { stones: Stone[]; markers: Marker[] }) {
-  const [state, setState] = useState<"idle" | "busy" | "done">("idle");
-  return (
-    <section className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
-      <div className="grid items-center gap-10 sm:grid-cols-[220px_1fr]">
-        <div className="mx-auto">
-          <Cairn stones={stones} complete size={210} />
-        </div>
-        <div>
-          <p className="type-kicker">Your cairn</p>
-          <h2 className="type-h1 mt-2 text-ink">{stones.map((s) => s.word).join(" · ")}</h2>
-          <ul className="mt-6 space-y-3">
-            {stones.map((s) => {
-              const m = markers.find((mm) => mm.chapter === s.chapter);
-              return (
-                <li key={s.chapter} className="flex gap-3">
-                  <span className="mt-1.5 h-3.5 w-5 shrink-0 rounded-full" style={{ background: s.color }} aria-hidden="true" />
-                  <p className="text-slate">
-                    <span className="font-sign font-semibold text-ink">{s.word}.</span> {s.meaning}.{" "}
-                    {m?.detail && <span className="text-stone">{m.detail}</span>}
-                  </p>
-                </li>
-              );
-            })}
-          </ul>
-          <button
-            type="button"
-            disabled={state === "busy"}
-            onClick={async () => {
-              setState("busy");
-              const { shareStoryCard } = await import("@/lib/shareImage");
-              const ok = await shareStoryCard({ stones, headline: "", detail: "", complete: true });
-              setState(ok ? "done" : "idle");
-            }}
-            className="btn btn-secondary btn-sm mt-6"
-          >
-            {state === "done" ? <Check size={17} aria-hidden="true" /> : <Share2 size={17} aria-hidden="true" />}
-            {state === "done" ? "Saved" : state === "busy" ? "Making card" : "Share my cairn"}
-          </button>
-        </div>
-      </div>
-    </section>
-  );
-}
 
 // ─── Unlock ───────────────────────────────────────────────────────────────────
 

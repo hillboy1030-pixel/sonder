@@ -4,14 +4,14 @@
 //
 // Voice: short sentences. Warm, plain, a little dry. Asks more than tells.
 // Honest about patterns, gentle with people. Never flatters, never lectures.
-// Name: Ember, a small old flame that lives in a trail lantern. No gender.
+// Name: Ember, a small, very old flame in a warm circle of light. The AI never describes itself or uses a gender for itself.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { ChapterId } from "./chapters";
 
 export const GUIDE = {
   welcome:
-    "I'll walk with you the whole way. Answer honestly, not impressively. There are no wrong turns up here.",
+    "I'll walk with you the whole way. At the end of each stage I'll hand you a stone with one word for what I saw. Answer honestly, not impressively. There are no wrong turns up here.",
   welcomeBack: "You came back. Good. Let's pick up the trail where you left it.",
   chapterIntro: {
     basecamp: "Before we climb, tell me where you're starting from.",
