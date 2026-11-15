@@ -5,11 +5,19 @@ import Anthropic from "@anthropic-ai/sdk";
  * code shown in small print so the site owner can tell what went wrong.
  */
 export function aiErrorResponse(error: unknown): Response {
+  // The API's own short explanation (never contains keys), for diagnosis.
+  const detail =
+    error instanceof Anthropic.APIError
+      ? String((error as { error?: { error?: { message?: string } } }).error?.error?.message ?? error.message ?? "").slice(0, 200)
+      : error instanceof Error
+      ? error.message.slice(0, 200)
+      : "";
+  if (detail) console.error("[ai] detail:", detail);
   const reply = (status: number, code: string, error: string) =>
-    Response.json({ error, code }, { status });
+    Response.json({ error, code, detail }, { status });
 
   if (error instanceof Anthropic.APIError) {
-    const msg = String((error as { message?: string }).message ?? "");
+    const msg = detail;
     if (/credit balance/i.test(msg) || error.status === 402) {
       console.error("[ai] Out of API credits. Add credits at platform.claude.com → Settings → Billing.");
       return reply(503, "ai_billing", "Sonder is resting for a moment. Please try again later.");
