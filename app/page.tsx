@@ -47,8 +47,7 @@ export default function Home() {
 function Hero() {
   return (
     <section className="relative isolate overflow-hidden bg-[linear-gradient(180deg,#121F28_0%,#1D3242_26%,#3E5A6C_50%,#8E9A95_72%,#E3C38D_92%,#EFD3A2_100%)] text-snow">
-      <MountainScene trail className="absolute inset-x-0 bottom-0 -z-10 h-[46svh] w-full sm:h-[58vh]" />
-      <div className="mx-auto max-w-6xl px-6 pb-[48svh] pt-32 sm:px-8 sm:pb-[52vh] sm:pt-40 lg:pb-[46vh]">
+      <div className="mx-auto max-w-6xl px-6 pb-[48svh] pt-32 sm:px-8 sm:pb-0 sm:pt-40">
         <p className="max-w-sm font-read text-[1.02rem] italic leading-relaxed text-snow/75 animate-fade">
           <span className="font-sign font-semibold not-italic text-gold-hi">sonder</span> (n.) the
           realization that each passerby has a life as vivid and complex as your own.
@@ -79,6 +78,12 @@ function Hero() {
           </li>
         </ul>
       </div>
+      {/* Phones: the scene sits under the text, cropped at the sides. Wider screens:
+          the whole scene at its natural shape, its sky tucked under the text. */}
+      <MountainScene
+        trail
+        className="absolute inset-x-0 bottom-0 -z-10 h-[46svh] w-full sm:relative sm:inset-auto sm:-mt-[3vw] lg:-mt-[13vw] sm:block sm:aspect-[16/7] sm:h-auto"
+      />
     </section>
   );
 }
