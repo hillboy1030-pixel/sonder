@@ -1,606 +1,313 @@
-"use client";
-
-import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import {
+  ArrowRight,
+  BookOpen,
+  ChevronDown,
+  Clock,
+  Eye,
+  Flag,
+  Mountain,
+  ShieldCheck,
+  Sunrise,
+  Tent,
+} from "lucide-react";
+import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
+import { MountainScene } from "@/components/MountainScene";
+import { WaitlistForm } from "@/components/WaitlistForm";
+import { ChapterIcon } from "@/components/ChapterIcon";
+import { JournalPageMock, JOURNAL_PHASES } from "@/components/JournalBits";
+import { REPORT_PRICE_LABEL } from "@/lib/pricing";
+import type { ChapterId } from "@/lib/chapters";
 
-// ─── Scroll-triggered fade-in hook ───────────────────────────────────────────
-
-function useFadeIn(threshold = 0.12) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          obs.disconnect();
-        }
-      },
-      { threshold }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-  return { ref, visible };
-}
-
-// ─── SVG Ink Divider — stroke fades to nothing at both ends ──────────────────
-
-function InkDivider({ width = 320, style }: { width?: number; style?: React.CSSProperties }) {
-  const id = `fade-${width}`;
+export default function Home() {
   return (
-    <svg
-      width={width}
-      height="24"
-      viewBox={`0 0 ${width} 24`}
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-      style={{ display: "block", ...style }}
-    >
-      <defs>
-        <linearGradient id={id} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%"   stopColor="#8A9383" stopOpacity="0" />
-          <stop offset="25%"  stopColor="#8A9383" stopOpacity="0.55" />
-          <stop offset="75%"  stopColor="#8A9383" stopOpacity="0.55" />
-          <stop offset="100%" stopColor="#8A9383" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <line
-        x1="0"
-        y1="12"
-        x2={width}
-        y2="12"
-        stroke={`url(#${id})`}
-        strokeWidth="0.75"
-      />
-    </svg>
-  );
-}
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
-export default function HomePage() {
-  const [scrollY, setScrollY] = useState(0);
-
-  useEffect(() => {
-    const onScroll = () => setScrollY(window.scrollY);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  const steps = useFadeIn();
-  const footer = useFadeIn();
-
-  return (
-    <div style={{ backgroundColor: "#F9F7F4", color: "#2A2620" }}>
-
-      {/* ── Hero ── */}
-      <section style={{ position: "relative", height: "100vh", overflow: "hidden" }}>
-
-        {/* Parallax forest image */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="https://images.unsplash.com/photo-1448375240586-882707db888b?w=2400&q=85"
-          alt=""
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "130%",
-            objectFit: "cover",
-            objectPosition: "center top",
-            transform: `translateY(${scrollY * 0.3}px)`,
-            willChange: "transform",
-          }}
-        />
-
-        {/* Gradient overlay — dark at bottom for readability, lighter at top */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "linear-gradient(to bottom, rgba(0,0,0,0.10) 0%, rgba(0,0,0,0.30) 35%, rgba(0,0,0,0.62) 100%)",
-          }}
-        />
-
-        {/* Hero-to-content fade transition */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: "140px",
-            background: "linear-gradient(to bottom, transparent 0%, #F9F7F4 100%)",
-            zIndex: 5,
-          }}
-        />
-
-        {/* Nav */}
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            padding: "28px 40px",
-            zIndex: 20,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          {/* Wordmark — left */}
-          <span
-            style={{
-              fontFamily: "var(--font-playfair), Georgia, serif",
-              fontSize: "28px",
-              fontWeight: 700,
-              color: "white",
-              letterSpacing: "-0.3px",
-            }}
-          >
-            Sonder
-          </span>
-
-          {/* Nav links — right on mobile, centered on sm+ */}
-          <div className="flex sm:hidden" style={{ gap: "10px" }}>
-            <NavLink href="/about">About</NavLink>
-            <NavLink href="/journal">The Journal</NavLink>
-          </div>
-          <div
-            className="hidden sm:flex"
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              gap: "16px",
-            }}
-          >
-            <NavLink href="/about">About</NavLink>
-            <NavLink href="/journal">The Journal</NavLink>
-          </div>
-        </div>
-
-        {/* Hero content */}
-        <div
-          style={{
-            position: "relative",
-            zIndex: 10,
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            textAlign: "center",
-            padding: "80px 24px 80px",
-            maxWidth: "900px",
-            margin: "0 auto",
-          }}
-        >
-          {/* Definition treatment — label, thin rule, italic text */}
-          <div
-            style={{
-              marginBottom: "56px",
-              textAlign: "center",
-              animationName: "fadeUp",
-              animationDuration: "1s",
-              animationTimingFunction: "ease-out",
-              animationDelay: "0ms",
-              animationFillMode: "both",
-            }}
-          >
-            <p
-              style={{
-                fontFamily: "var(--font-inter), system-ui, sans-serif",
-                fontSize: "9px",
-                letterSpacing: "0.32em",
-                color: "rgba(249,247,244,0.5)",
-                textTransform: "uppercase",
-                fontWeight: 500,
-                marginBottom: "14px",
-              }}
-            >
-              Sonder &nbsp;·&nbsp; n.
-            </p>
-            {/* Thin rule */}
-            <div
-              style={{
-                width: "40px",
-                height: "0.5px",
-                background: "rgba(249,247,244,0.3)",
-                margin: "0 auto 18px",
-              }}
-            />
-            <p
-              style={{
-                fontFamily: "var(--font-eb-garamond), Georgia, serif",
-                fontStyle: "italic",
-                fontSize: "clamp(15px, 1.5vw, 18px)",
-                color: "rgba(249,247,244,0.65)",
-                lineHeight: 1.65,
-                maxWidth: "420px",
-                margin: "0 auto",
-                fontWeight: 400,
-              }}
-            >
-              the realization that each passerby has a life as vivid and complex as your own.
-            </p>
-          </div>
-
-          {/* Headline */}
-          <h1
-            style={{
-              fontFamily: "var(--font-playfair), Georgia, serif",
-              fontSize: "clamp(4rem, 10vw, 7rem)",
-              fontWeight: 300,
-              color: "rgba(249,247,244,0.97)",
-              lineHeight: 1.0,
-              letterSpacing: "-0.02em",
-              marginBottom: "44px",
-              animationName: "fadeUp",
-              animationDuration: "1s",
-              animationTimingFunction: "ease-out",
-              animationDelay: "200ms",
-              animationFillMode: "both",
-            }}
-          >
-            Come inward.
-          </h1>
-
-          {/* Body paragraph */}
-          <p
-            style={{
-              fontFamily: "var(--font-eb-garamond), Georgia, serif",
-              fontSize: "clamp(15px, 1.45vw, 18px)",
-              color: "rgba(249,247,244,0.78)",
-              lineHeight: 1.75,
-              marginBottom: "56px",
-              maxWidth: "540px",
-              fontWeight: 400,
-              animationName: "fadeUp",
-              animationDuration: "1s",
-              animationTimingFunction: "ease-out",
-              animationDelay: "400ms",
-              animationFillMode: "both",
-            }}
-          >
-            A 72-question assessment grounded in validated psychology. A nine-section portrait of how you think, work, love, and grow. Your answers never leave your browser.
-          </p>
-
-          {/* CTA button */}
-          <div
-            style={{
-              animationName: "fadeUp",
-              animationDuration: "1s",
-              animationTimingFunction: "ease-out",
-              animationDelay: "600ms",
-              animationFillMode: "both",
-            }}
-          >
-            <HeroButton />
-          </div>
-        </div>
-
-        {/* Scroll indicator — thin vertical line */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            bottom: "52px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            zIndex: 10,
-            animationName: "fadeUp",
-            animationDuration: "1s",
-            animationTimingFunction: "ease-out",
-            animationDelay: "1000ms",
-            animationFillMode: "both",
-          }}
-        >
-          <div
-            style={{
-              width: "1px",
-              height: "48px",
-              background:
-                "linear-gradient(to bottom, rgba(255,255,255,0.45), rgba(255,255,255,0))",
-              margin: "0 auto",
-            }}
-          />
-        </div>
-      </section>
-
-      {/* ── How It Works ── */}
-      <section style={{ background: "#F9F7F4", padding: "120px 24px 96px" }}>
-        <div ref={steps.ref} style={{ maxWidth: "640px", margin: "0 auto" }}>
-
-          {/* Section heading */}
-          <h2
-            style={{
-              fontFamily: "var(--font-playfair), Georgia, serif",
-              fontSize: "clamp(2.5rem, 5vw, 3.5rem)",
-              fontWeight: 400,
-              textAlign: "center",
-              color: "#3C3530",
-              letterSpacing: "-0.01em",
-              lineHeight: 1.1,
-              marginBottom: "80px",
-              opacity: steps.visible ? 1 : 0,
-              transform: steps.visible ? "translateY(0)" : "translateY(20px)",
-              transition: "opacity 0.8s ease-out, transform 0.8s ease-out",
-            }}
-          >
-            How it works
-          </h2>
-
-          {/* Steps */}
-          {STEPS.map((step, i) => (
-            <div key={step.number}>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "80px 1fr",
-                  gap: "24px",
-                  alignItems: "start",
-                  padding: "44px 0",
-                  opacity: steps.visible ? (step.comingSoon ? 0.5 : 1) : 0,
-                  transform: steps.visible ? "translateY(0)" : "translateY(28px)",
-                  transition: `opacity 0.8s ease-out ${i * 150 + 200}ms, transform 0.8s ease-out ${i * 150 + 200}ms`,
-                }}
-              >
-                {/* Step numeral */}
-                <span
-                  style={{
-                    fontFamily: "var(--font-playfair), Georgia, serif",
-                    fontSize: "clamp(3.5rem, 6vw, 5rem)",
-                    fontWeight: 300,
-                    color: step.comingSoon ? "rgba(138,147,131,0.18)" : "rgba(138,147,131,0.38)",
-                    lineHeight: 1,
-                    paddingTop: "4px",
-                  }}
-                >
-                  {step.number}
-                </span>
-                <div>
-                  {step.comingSoon && (
-                    <p
-                      style={{
-                        fontFamily: "var(--font-inter), system-ui, sans-serif",
-                        fontSize: "9px",
-                        fontStyle: "italic",
-                        letterSpacing: "0.14em",
-                        color: "#8A9383",
-                        opacity: 0.7,
-                        marginBottom: "10px",
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      Coming soon
-                    </p>
-                  )}
-                  <h3
-                    style={{
-                      fontFamily: "var(--font-playfair), Georgia, serif",
-                      fontSize: "clamp(18px, 2.1vw, 24px)",
-                      fontWeight: 500,
-                      color: step.comingSoon ? "#7A6E67" : "#3C3530",
-                      marginBottom: "12px",
-                      letterSpacing: "-0.01em",
-                    }}
-                  >
-                    {step.title}
-                  </h3>
-                  <p
-                    style={{
-                      fontFamily: "var(--font-eb-garamond), Georgia, serif",
-                      fontSize: "clamp(16px, 1.7vw, 18px)",
-                      color: "#7A6E67",
-                      lineHeight: 1.8,
-                    }}
-                  >
-                    {step.description}
-                  </p>
-                </div>
-              </div>
-
-              {/* Custom SVG divider between steps */}
-              {i < STEPS.length - 1 && (
-                <div
-                  style={{
-                    opacity: steps.visible ? 1 : 0,
-                    transition: `opacity 0.8s ease-out ${i * 150 + 300}ms`,
-                    display: "flex",
-                    justifyContent: "center",
-                  }}
-                >
-                  <InkDivider width={240} />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── Footer ── */}
-      <footer
-        ref={footer.ref}
-        style={{
-          backgroundColor: "#F9F7F4",
-          padding: "64px 24px 56px",
-          textAlign: "center",
-          opacity: footer.visible ? 1 : 0,
-          transition: "opacity 0.9s ease-out",
-        }}
-      >
-        {/* Footer ink divider */}
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: "44px" }}>
-          <InkDivider width={200} />
-        </div>
-
-        <p
-          style={{
-            fontFamily: "var(--font-inter), system-ui, sans-serif",
-            fontSize: "11px",
-            letterSpacing: "0.2em",
-            textTransform: "uppercase",
-            color: "#8A9383",
-            marginBottom: "16px",
-          }}
-        >
-          Based on IPIP-NEO, ECR-RS, O*NET, and VIA validated frameworks
-        </p>
-        <p
-          style={{
-            fontFamily: "var(--font-eb-garamond), Georgia, serif",
-            fontStyle: "italic",
-            fontSize: "15px",
-            color: "#7A6E67",
-            maxWidth: "380px",
-            margin: "0 auto",
-            lineHeight: 1.75,
-          }}
-        >
-          Your privacy is protected — we never store your responses or results on our servers.
-        </p>
-        <div style={{ marginTop: "24px", display: "flex", gap: "28px", justifyContent: "center" }}>
-          <a
-            href="/terms"
-            style={{
-              fontFamily: "var(--font-inter), system-ui, sans-serif",
-              fontSize: "11px",
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              color: "#8A9383",
-              textDecoration: "none",
-              transition: "color 0.3s ease",
-            }}
-            onMouseEnter={e => (e.currentTarget.style.color = "#5C524B")}
-            onMouseLeave={e => (e.currentTarget.style.color = "#8A9383")}
-          >
-            Terms of Service
-          </a>
-          <a
-            href="/privacy"
-            style={{
-              fontFamily: "var(--font-inter), system-ui, sans-serif",
-              fontSize: "11px",
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              color: "#8A9383",
-              textDecoration: "none",
-              transition: "color 0.3s ease",
-            }}
-            onMouseEnter={e => (e.currentTarget.style.color = "#5C524B")}
-            onMouseLeave={e => (e.currentTarget.style.color = "#8A9383")}
-          >
-            Privacy Policy
-          </a>
-        </div>
-      </footer>
+    <div className="flex min-h-svh flex-col">
+      <SiteHeader variant="overlay" />
+      <Hero />
+      <Trail />
+      <Chapters />
+      <Journal />
+      <Faq />
+      <Closing />
+      <SiteFooter />
     </div>
   );
 }
 
-// ─── Hero CTA button ──────────────────────────────────────────────────────────
+// ─── Hero ─────────────────────────────────────────────────────────────────────
 
-function HeroButton() {
-  const [hovered, setHovered] = useState(false);
+function Hero() {
   return (
-    <Link
-      href="/assessment"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        display: "inline-block",
-        padding: "18px 56px",
-        borderRadius: "9999px",
-        background: hovered ? "rgba(249,247,244,0.08)" : "transparent",
-        border: "1px solid rgba(249,247,244,0.65)",
-        color: "rgba(249,247,244,0.92)",
-        fontFamily: "var(--font-inter), system-ui, sans-serif",
-        fontWeight: 500,
-        fontSize: "15px",
-        letterSpacing: "0.12em",
-        textDecoration: "none",
-        textTransform: "uppercase",
-        transition: "background 0.4s ease-out, border-color 0.4s ease-out",
-        borderColor: hovered ? "rgba(249,247,244,0.85)" : "rgba(249,247,244,0.65)",
-      }}
-    >
-      Begin
-    </Link>
+    <section className="relative isolate overflow-hidden bg-[linear-gradient(180deg,#121F28_0%,#1D3242_26%,#3E5A6C_50%,#8E9A95_72%,#E3C38D_92%,#EFD3A2_100%)] text-snow">
+      <MountainScene trail className="absolute inset-x-0 bottom-0 -z-10 h-[46svh] w-full sm:h-[58vh]" />
+      <div className="mx-auto max-w-6xl px-6 pb-[48svh] pt-32 sm:px-8 sm:pb-[52vh] sm:pt-40 lg:pb-[46vh]">
+        <p className="max-w-sm font-read text-[1.02rem] italic leading-relaxed text-snow/75 animate-fade">
+          <span className="font-sign font-semibold not-italic text-gold-hi">sonder</span> (n.) the
+          realization that each passerby has a life as vivid and complex as your own.
+        </p>
+        <h1 className="type-display mt-7 animate-rise">Come inward.</h1>
+        <p className="type-lede mt-6 max-w-xl text-snow/85">
+          Answer 72 research-backed questions and share what you&rsquo;re carrying right now. At the
+          top, you&rsquo;ll get a written portrait of how you think, work, love, and grow.
+        </p>
+        <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+          <Link href="/assessment" className="btn btn-primary">
+            Start the climb
+            <ArrowRight size={18} strokeWidth={2.25} aria-hidden="true" />
+          </Link>
+          <Link href="#trail" className="btn btn-glass">
+            See how it works
+          </Link>
+        </div>
+        <ul className="type-meta mt-8 flex flex-wrap gap-x-6 gap-y-2 text-snow/80">
+          <li className="flex items-center gap-2">
+            <Clock size={16} aria-hidden="true" /> About 15 minutes
+          </li>
+          <li className="flex items-center gap-2">
+            <Eye size={16} aria-hidden="true" /> First three insights free
+          </li>
+          <li className="flex items-center gap-2">
+            <ShieldCheck size={16} aria-hidden="true" /> Answers stay in your browser
+          </li>
+        </ul>
+      </div>
+    </section>
   );
 }
 
-// ─── Nav link — frosted pill ──────────────────────────────────────────────────
+// ─── How it works: the trail in order ─────────────────────────────────────────
 
-function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <a
-      href={href}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        display: "inline-block",
-        padding: "7px 18px",
-        borderRadius: "9999px",
-        background: hovered ? "rgba(255,255,255,0.96)" : "rgba(255,255,255,0.16)",
-        border: "1.5px solid rgba(255,255,255,0.65)",
-        color: hovered ? "#3D5A3E" : "white",
-        fontWeight: 600,
-        fontSize: "11px",
-        letterSpacing: "0.04em",
-        textDecoration: "none",
-        backdropFilter: "blur(10px)",
-        WebkitBackdropFilter: "blur(10px)",
-        transform: hovered ? "translateY(-2px)" : "translateY(0)",
-        transition: "background 0.22s, color 0.22s, transform 0.22s",
-        boxShadow: hovered
-          ? "0 8px 30px rgba(0,0,0,0.18)"
-          : "0 2px 12px rgba(0,0,0,0.12)",
-      }}
-    >
-      {children}
-    </a>
-  );
-}
-
-// ─── Data ─────────────────────────────────────────────────────────────────────
-
-const STEPS = [
+const STAGES = [
   {
-    number: "01",
-    title: "Take the assessment",
-    description:
-      "72 questions across four research-backed frameworks. Takes about 10 minutes. Honest answers yield the most accurate picture.",
+    icon: Tent,
+    name: "Basecamp",
+    title: "Tell us where you are",
+    body: "Twelve quick questions about your life and what you're working through. Answer only what feels right.",
+    meta: "3 minutes",
   },
   {
-    number: "02",
-    title: "Get your free preview",
-    description:
-      "See three insight cards from your results immediately — no payment required.",
+    icon: Mountain,
+    name: "The climb",
+    title: "Four short chapters",
+    body: "72 statements drawn from established personality, career, relationship, and strengths research. Each chapter ends with a trail marker that shows what's taking shape.",
+    meta: "10 minutes",
   },
   {
-    number: "03",
-    title: "Unlock your full report",
-    description:
-      "For a one-time payment, receive your complete Sonder Report — nine sections of precise, personal psychological reflection.",
+    icon: Sunrise,
+    name: "First light",
+    title: "Read three insights, free",
+    body: "Sonder writes three insights from your answers before you pay anything. If they don't land, stop there.",
+    meta: "Free",
   },
   {
-    number: "04",
-    title: "The Sonder Journal",
-    description:
-      "Your report becomes a physical book — thick paper, a full year of prompts crafted from your profile, designed to sit on your nightstand. Not more content. Just a quiet invitation to keep sondering.",
-    comingSoon: true,
+    icon: Flag,
+    name: "The summit",
+    title: "Your full Sonder Report",
+    body: "Nine sections on how you think, work, love, and grow, ending with books, prompts, and daily practices for your next 90 days. Yours to keep as a PDF.",
+    meta: REPORT_PRICE_LABEL,
+  },
+  {
+    icon: BookOpen,
+    name: "The journey",
+    title: "The 90-day journal",
+    body: "Your report, turned into a printed journal: one small challenge a day, written for your patterns and what you're facing now.",
+    meta: "Coming soon",
+    soon: true,
   },
 ];
+
+function Trail() {
+  return (
+    <section id="trail" className="scroll-mt-24 bg-mist">
+      <div className="mx-auto grid max-w-6xl gap-12 px-6 py-24 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20 lg:py-32">
+        <div className="lg:sticky lg:top-32 lg:self-start">
+          <h2 className="type-h1 text-ink">One trail, five stops.</h2>
+          <p className="type-lede mt-5 max-w-md text-slate">
+            Everything happens in order, at your pace. You only pay at the summit, and only if the
+            free insights were worth it.
+          </p>
+          <Link href="/assessment" className="btn btn-dark mt-8">
+            Start at basecamp
+            <ArrowRight size={18} aria-hidden="true" />
+          </Link>
+        </div>
+
+        <ol className="relative">
+          <span
+            aria-hidden="true"
+            className="absolute bottom-10 left-[27px] top-10 w-[3px] bg-[repeating-linear-gradient(180deg,var(--color-lichen)_0_7px,transparent_7px_14px)]"
+          />
+          {STAGES.map((s) => (
+            <li key={s.name} className="relative flex gap-6 pb-12 last:pb-0">
+              <span
+                className={`relative z-10 grid h-14 w-14 shrink-0 place-items-center rounded-full border-2 ${
+                  s.soon ? "border-dashed border-lichen bg-mist text-stone" : "border-pine bg-pine text-gold-hi"
+                }`}
+              >
+                <s.icon size={24} strokeWidth={1.9} aria-hidden="true" />
+              </span>
+              <div className="pt-1">
+                <p className="type-kicker">{s.name}</p>
+                <h3 className="type-h3 mt-1 text-ink">{s.title}</h3>
+                <p className="mt-2 max-w-lg text-slate">{s.body}</p>
+                <p
+                  className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-sign text-sm font-semibold ${
+                    s.soon ? "bg-mist-deep text-stone" : s.meta === REPORT_PRICE_LABEL ? "bg-gold/25 text-ink" : "bg-pine/10 text-pine"
+                  }`}
+                >
+                  {s.meta === "Free" || s.meta === REPORT_PRICE_LABEL || s.soon ? null : <Clock size={14} aria-hidden="true" />}
+                  {s.meta}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  );
+}
+
+// ─── What it measures ─────────────────────────────────────────────────────────
+
+const MEASURES: { id: ChapterId; name: string; topic: string; framework: string; sample: string }[] = [
+  { id: "terrain", name: "The terrain", topic: "Personality", framework: "Big Five (IPIP-NEO)", sample: "I enjoy thinking about complex ideas." },
+  { id: "path", name: "The path", topic: "Work you're drawn to", framework: "Holland codes (O*NET)", sample: "Teach someone how to do something." },
+  { id: "company", name: "The company you keep", topic: "Closeness in relationships", framework: "Attachment (ECR)", sample: "I find it difficult to depend on other people." },
+  { id: "carry", name: "What you carry", topic: "Character strengths", framework: "VIA strengths", sample: "I finish whatever I start." },
+];
+
+function Chapters() {
+  return (
+    <section className="border-t border-line/70 bg-snow">
+      <div className="mx-auto max-w-6xl px-6 py-24 sm:px-8 lg:py-28">
+        <div className="max-w-2xl">
+          <h2 className="type-h1 text-ink">Built on research, written for you.</h2>
+          <p className="type-lede mt-5 text-slate">
+            The questions come from four well-studied frameworks. What you share at basecamp is what
+            makes the writing yours.
+          </p>
+        </div>
+        <ul className="mt-12 divide-y divide-line border-y border-line">
+          {MEASURES.map((m) => (
+            <li key={m.id} className="grid gap-3 py-6 sm:grid-cols-[3.5rem_1fr_1fr] sm:items-center lg:grid-cols-[3.5rem_1.1fr_0.9fr_1.4fr] lg:gap-8">
+              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-mist text-pine">
+                <ChapterIcon id={m.id} size={22} strokeWidth={1.9} />
+              </span>
+              <div>
+                <h3 className="type-h3 text-ink">{m.name}</h3>
+                <p className="font-sign text-[0.98rem] text-slate">{m.topic}</p>
+              </div>
+              <p className="font-sign text-[0.98rem] font-medium text-pine-2">{m.framework}</p>
+              <p className="font-read italic text-slate sm:col-span-3 lg:col-span-1">&ldquo;{m.sample}&rdquo;</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+// ─── The journal ──────────────────────────────────────────────────────────────
+
+function Journal() {
+  return (
+    <section id="journal" className="relative isolate overflow-hidden bg-pine text-snow">
+      <MountainScene quiet className="absolute inset-x-0 bottom-0 -z-10 h-40 w-full opacity-[0.08]" />
+      <div className="mx-auto grid max-w-6xl items-center gap-16 px-6 py-24 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:py-32">
+        <div>
+          <p className="type-kicker text-gold-hi">Coming soon</p>
+          <h2 className="type-h1 mt-3">Ninety days, one page at a time.</h2>
+          <p className="type-lede mt-5 max-w-lg text-snow/80">
+            Your report shows you the pattern. The Sonder Journal helps you practice the change: a
+            printed book written from your report and what you&rsquo;re working through, with one
+            small challenge for each of the next 90 days.
+          </p>
+          <ol className="mt-9 space-y-5">
+            {JOURNAL_PHASES.map((ph) => (
+              <li key={ph.name} className="flex gap-4">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-white/10 text-gold-hi">
+                  <ph.icon size={20} aria-hidden="true" />
+                </span>
+                <div>
+                  <p className="font-sign text-[1.05rem] font-semibold">
+                    {ph.name} <span className="font-medium text-snow/60">Days {ph.days}</span>
+                  </p>
+                  <p className="text-snow/75">{ph.body}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+          <div className="mt-10 max-w-lg">
+            <WaitlistForm tone="dark" id="home-waitlist" />
+          </div>
+        </div>
+        <JournalPageMock />
+      </div>
+    </section>
+  );
+}
+
+// ─── FAQ ──────────────────────────────────────────────────────────────────────
+
+const FAQS = [
+  {
+    q: "Is Sonder therapy or a diagnosis?",
+    a: "No. Sonder is a tool for self-reflection. It describes patterns, not disorders, and it isn't a substitute for a licensed professional. If you're in crisis, call or text 988 (US).",
+  },
+  {
+    q: "Where do my answers go?",
+    a: "Your answers are saved in your own browser. To write your insights, they're sent to our AI provider once, without your name or email, and we don't keep a copy.",
+  },
+  {
+    q: `Why is the full report only ${REPORT_PRICE_LABEL}?`,
+    a: "It covers the cost of writing it. We'd rather more people get to read theirs.",
+  },
+  {
+    q: "What's in the full report?",
+    a: "Nine sections: who you are, how you work, how you love, what drives you, your growth edges, your path forward, how you read other people, the whole picture, and a plan for your next 90 days with books, journal prompts, and daily practices.",
+  },
+  {
+    q: "Can I take it again later?",
+    a: "Yes. People change, and so do their answers. Each new full report is the same price.",
+  },
+];
+
+function Faq() {
+  return (
+    <section className="bg-mist">
+      <div className="mx-auto grid max-w-6xl gap-10 px-6 py-24 sm:px-8 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
+        <h2 className="type-h1 text-ink">Before you start</h2>
+        <div className="divide-y divide-line border-y border-line">
+          {FAQS.map((f) => (
+            <details key={f.q} className="group">
+              <summary className="flex cursor-pointer items-center justify-between gap-6 py-5 font-sign text-[1.12rem] font-semibold text-ink transition-colors hover:text-pine-2">
+                {f.q}
+                <ChevronDown size={20} className="shrink-0 text-stone transition-transform duration-300 group-open:rotate-180" aria-hidden="true" />
+              </summary>
+              <p className="max-w-2xl pb-6 text-slate">{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Closing ──────────────────────────────────────────────────────────────────
+
+function Closing() {
+  return (
+    <section className="relative isolate overflow-hidden bg-mist">
+      <MountainScene quiet className="absolute inset-x-0 bottom-0 -z-10 h-[62%] w-full" />
+      <div className="mx-auto max-w-6xl px-6 pb-56 pt-20 text-center sm:px-8 sm:pb-72">
+        <h2 className="type-h1 text-ink">Start where you are.</h2>
+        <p className="type-lede mx-auto mt-4 max-w-md text-slate">Fifteen minutes. Three free insights. No account.</p>
+        <Link href="/assessment" className="btn btn-primary mt-8">
+          Start the climb
+          <ArrowRight size={18} strokeWidth={2.25} aria-hidden="true" />
+        </Link>
+      </div>
+    </section>
+  );
+}

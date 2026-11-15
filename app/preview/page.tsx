@@ -1,563 +1,343 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  BookOpen,
+  Clock,
+  Compass,
+  Download,
+  Eye,
+  LoaderCircle,
+  Lock,
+  ShieldCheck,
+  Share2,
+  Users,
+} from "lucide-react";
+import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
+import { WritingState, ProblemState } from "@/components/WritingState";
+import { ChapterIcon } from "@/components/ChapterIcon";
+import { WaitlistForm } from "@/components/WaitlistForm";
+import { KEYS, readJSON, writeJSON } from "@/lib/storage";
+import { useStored } from "@/lib/useStored";
+import { REPORT_PRICE_LABEL } from "@/lib/pricing";
+import type { ChapterId } from "@/lib/chapters";
+import { REPORT_SECTIONS } from "@/lib/reportSections";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+type Insight = { title: string; insight: string };
+type Marker = { chapter: ChapterId; headline: string; detail: string };
 
-type PreviewInsight = { title: string; insight: string };
-type PreviewData = { previewInsights: PreviewInsight[] };
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const LOADING_MESSAGES = [
-  "Settling into the quiet...",
-  "Reading the geometry of your answers...",
-  "Finding the first three truths...",
+const MESSAGES = [
+  "Reading your answers…",
+  "Looking at where your scores meet…",
+  "Holding what you shared at basecamp…",
+  "Writing your first three insights…",
 ];
 
-const LOCKED_SECTION_TITLES = [
-  "Who You Are",
-  "How You Work",
-  "How You Love",
-  "What Drives You",
-  "Your Growth Edges",
-  "Your Path Forward",
-  "The Sonder Lens",
-  "The Whole Picture",
-  "Your Next 90 Days",
+const LENSES = [
+  { icon: Eye, label: "The voice inside" },
+  { icon: Users, label: "How others see you" },
+  { icon: Compass, label: "What drives you" },
 ];
 
-const LOCKED_SECTION_TEASERS: Record<string, string> = {
-  "Who You Are":        "The shape of your mind, named.",
-  "How You Work":       "What your career is actually asking of you.",
-  "How You Love":       "The pattern underneath your closest relationships.",
-  "What Drives You":    "The question you've been organizing your life around.",
-  "Your Growth Edges":  "The places your greatest gifts cost you the most.",
-  "Your Path Forward":  "The work this chapter of your life is asking you to do.",
-  "The Sonder Lens":    "Three things you consistently misread about other people.",
-  "The Whole Picture":  "The central paradox of who you are.",
-  "Your Next 90 Days":  "Three books, three prompts, three practices.",
-};
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
-// Parallel background generation removed — re-enable when upgraded to Vercel Pro (maxDuration 300 already set on the report route)
 
 export default function PreviewPage() {
   const router = useRouter();
-  const [preview, setPreview] = useState<PreviewData | null>(null);
+  const cached = useStored<{ previewInsights: Insight[] }>(KEYS.preview);
+  const cachedInsights = cached?.previewInsights?.length === 3 ? cached.previewInsights : null;
+  const [fresh, setFresh] = useState<Insight[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [msgIndex, setMsgIndex] = useState(0);
-  // Incrementing triggers a re-fetch of the preview
-  const [retryCount, setRetryCount] = useState(0);
-  // Prevents a second concurrent preview fetch if router ref changes and re-runs the effect
-  const previewFetchStarted = useRef(false);
+  const [attempt, setAttempt] = useState(0);
+  const started = useRef(-1);
+  const insights = fresh ?? (attempt === 0 ? cachedInsights : null);
 
-  // Rotate loading messages while waiting for preview
   useEffect(() => {
-    if (preview || error) return;
-    const interval = setInterval(
-      () => setMsgIndex((i) => Math.min(i + 1, LOADING_MESSAGES.length - 1)),
-      7000
-    );
-    return () => clearInterval(interval);
-  }, [preview, error]);
+    if (cached === undefined) return; // not hydrated yet
+    if (attempt === 0 && cachedInsights) return;
+    if (started.current === attempt) return;
+    started.current = attempt;
 
-  // Fetch preview — runs on mount and on retry
-  useEffect(() => {
-    // On retry: reset the guard so a fresh fetch is allowed
-    if (retryCount > 0) previewFetchStarted.current = false;
-
-    // Guard: prevent a second concurrent fetch if router ref changes and re-runs this effect
-    if (previewFetchStarted.current) return;
-    previewFetchStarted.current = true;
-
-    // Always parse scores first — needed both for cache-hit path and fresh fetch
-    const rawScores = localStorage.getItem("sonder_scores");
-    if (!rawScores) {
+    const scores = readJSON(KEYS.scores);
+    if (!scores) {
       router.replace("/assessment");
       return;
     }
-
-    let scores: unknown;
-    try {
-      scores = JSON.parse(rawScores);
-    } catch {
-      router.replace("/assessment");
-      return;
-    }
-
-    let context: unknown;
-    try {
-      const rawContext = localStorage.getItem("sonder_context");
-      if (rawContext) context = JSON.parse(rawContext);
-    } catch {
-      // context is optional
-    }
-
-    // On first load: use cached preview if available
-    if (retryCount === 0) {
-      const cached = localStorage.getItem("sonder_preview");
-      if (cached) {
-        try {
-          setPreview(JSON.parse(cached));
-          return;
-        } catch {
-          // cache corrupt — fall through to regenerate
-        }
-      }
-    }
-
-    // Fetch the 3 preview cards from the fast endpoint
     fetch("/api/generate-preview", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scores, context }),
+      body: JSON.stringify({ scores, context: readJSON(KEYS.context) }),
     })
       .then(async (res) => {
-        const data = await res.json().catch(() => ({ error: undefined }));
-        if (!res.ok) {
-          throw new Error(data?.error ?? "Preview generation failed. Please try again.");
-        }
-        return data as PreviewData;
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || "Your preview didn't come through. Please try again.");
+        return data as { previewInsights: Insight[] };
       })
       .then((data) => {
-        localStorage.setItem("sonder_preview", JSON.stringify(data));
-        setPreview(data);
+        writeJSON(KEYS.preview, data);
+        setFresh(data.previewInsights);
       })
       .catch((err: Error) => {
-        // Reset guard so the user can retry
-        previewFetchStarted.current = false;
-        const msg = err?.message ?? "";
-        if (!msg || msg.toLowerCase().includes("fetch") || msg.toLowerCase().includes("network")) {
-          setError("We couldn't reach our server. Check your connection and try again.");
-        } else {
-          setError(msg);
-        }
+        const offline = /fetch|network/i.test(err.message);
+        setError(offline ? "We couldn't reach Sonder. Check your connection and try again." : err.message);
       });
-  }, [retryCount, router]);
+  }, [attempt, cached, cachedInsights, router]);
 
-  function handleRetry() {
-    setError(null);
-    setPreview(null);
-    previewFetchStarted.current = false; // allow preview fetch to restart on retry
-    setRetryCount((c) => c + 1);
-  }
-
-  if (error) return <ErrorState message={error} onRetry={handleRetry} />;
-  if (!preview) return <LoadingState message={LOADING_MESSAGES[msgIndex]} />;
-  return <ReportPreview previewInsights={preview.previewInsights} />;
-}
-
-// ─── Progress Ring ────────────────────────────────────────────────────────────
-
-function ProgressRing({ duration }: { duration: number }) {
-  const C = 150.8; // circumference of r=24 circle (2π×24)
-  const [offset, setOffset] = useState(C);
-
-  useEffect(() => {
-    const startTime = Date.now();
-    const totalMs = duration * 1000;
-    const id = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / totalMs, 1);
-      setOffset(C * (1 - progress));
-      if (progress >= 1) clearInterval(id);
-    }, 50);
-    return () => clearInterval(id);
-  }, [duration]);
-
-  return (
-    <svg width="60" height="60" viewBox="0 0 60 60" fill="none" aria-hidden="true">
-      {/* Ghost track */}
-      <circle cx="30" cy="30" r="24" stroke="#3D5A3E" strokeWidth="2" strokeOpacity="0.12" />
-      {/* Filling arc — starts at 12 o'clock */}
-      <circle
-        cx="30" cy="30" r="24"
-        stroke="#3D5A3E"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeDasharray={C}
-        strokeDashoffset={offset}
-        transform="rotate(-90 30 30)"
+  if (error) {
+    return (
+      <ProblemState
+        title="Your insights didn't come through"
+        message={error}
+        primary={{ label: "Try again", onClick: () => (setError(null), setAttempt((a) => a + 1)) }}
+        secondary={{ label: "Back to the assessment", href: "/assessment" }}
       />
-    </svg>
-  );
-}
-
-// ─── Loading Screen ───────────────────────────────────────────────────────────
-
-function LoadingState({ message }: { message: string }) {
-  return (
-    <div className="min-h-screen bg-[#F9F7F4] flex flex-col items-center justify-center px-6">
-      <span className="font-serif text-3xl font-bold text-forest mb-14">
-        Sonder
-      </span>
-
-      {/* Circular progress ring — fills over 30 seconds */}
-      <ProgressRing duration={30} />
-
-      {/* Sequential message — key swap triggers fade-up re-animation */}
-      <p
-        key={message}
-        className="mt-10 text-center max-w-xs animate-fade-up"
-        style={{
-          fontFamily: "var(--font-playfair), Georgia, serif",
-          fontStyle: "italic",
-          fontSize: "1.125rem",
-          lineHeight: "1.65",
-          color: "#3D5A3E",
-        }}
-      >
-        {message}
-      </p>
-
-      <p className="mt-8 text-xs text-stone-light text-center">
-        Patterns surface slowly. This is by design.
-      </p>
-    </div>
-  );
-}
-
-// ─── Error Screen ─────────────────────────────────────────────────────────────
-
-function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
-  return (
-    <div className="min-h-screen bg-[#F9F7F4] flex flex-col items-center justify-center px-6 text-center">
-      <span className="font-serif text-3xl font-bold text-forest mb-6">
-        Sonder
-      </span>
-      <p className="text-bark font-medium mb-2">Something went wrong</p>
-      <p className="text-stone text-sm mb-8 max-w-sm">{message}</p>
-      <button
-        onClick={onRetry}
-        className="bg-forest text-parchment px-7 py-3 rounded-sm font-medium text-sm hover:bg-forest-light transition-colors mb-4"
-      >
-        Try Again
-      </button>
-      <a
-        href="/assessment"
-        className="text-stone text-sm underline underline-offset-2 hover:text-bark transition-colors"
-      >
-        Back to Assessment
-      </a>
-    </div>
-  );
-}
-
-// ─── Report Preview ───────────────────────────────────────────────────────────
-
-function ReportPreview({ previewInsights }: { previewInsights: PreviewInsight[] }) {
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [checkoutError, setCheckoutError] = useState<string | null>(null);
-  const [shareLoading, setShareLoading] = useState(false);
-  const shareCardRef = useRef<HTMLDivElement>(null);
-
-  async function handleShare() {
-    if (!shareCardRef.current) return;
-    setShareLoading(true);
-    try {
-      const html2canvas = (await import("html2canvas")).default;
-      const canvas = await html2canvas(shareCardRef.current, {
-        scale: 1,
-        width: 1080,
-        height: 1080,
-        backgroundColor: "#F5F0E8",
-        useCORS: true,
-        logging: false,
-      });
-
-      canvas.toBlob(async (blob) => {
-        if (!blob) { setShareLoading(false); return; }
-        const file = new File([blob], "my-sonder-insights.png", { type: "image/png" });
-
-        if (navigator.share && navigator.canShare?.({ files: [file] })) {
-          await navigator.share({
-            files: [file],
-            title: "My Sonder Insights",
-            text: "I just discovered something about myself. Take the assessment at sonder-me.com",
-          });
-        } else {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "my-sonder-insights.png";
-          a.click();
-          URL.revokeObjectURL(url);
-        }
-        setShareLoading(false);
-      }, "image/png");
-    } catch (err) {
-      console.error("Share failed:", err);
-      setShareLoading(false);
-    }
+    );
   }
+  if (!insights) {
+    return (
+      <WritingState
+        title="First light is coming"
+        messages={MESSAGES}
+        seconds={22}
+        note="This usually takes 15 to 30 seconds."
+      />
+    );
+  }
+  return <Preview insights={insights} />;
+}
 
-  async function handleCheckout() {
-    setCheckoutLoading(true);
-    setCheckoutError(null);
+// ─── The preview ──────────────────────────────────────────────────────────────
+
+function Preview({ insights }: { insights: Insight[] }) {
+  const markers = useStored<Marker[]>(KEYS.markers) ?? [];
+
+  return (
+    <div className="flex min-h-svh flex-col bg-mist">
+      <SiteHeader cta={false} />
+      <main className="flex-1">
+        <section className="mx-auto max-w-3xl px-5 pb-6 pt-28 sm:px-8 sm:pt-36">
+          <p className="type-kicker">First light</p>
+          <h1 className="type-h1 mt-3 text-ink">Three things your answers say about you.</h1>
+          <p className="type-lede mt-4 text-slate">
+            Written from your scores and what you shared at basecamp. Read them slowly.
+          </p>
+
+          <ol className="mt-10 space-y-4">
+            {insights.map((ins, i) => {
+              const L = LENSES[i] ?? LENSES[0];
+              return (
+                <li
+                  key={i}
+                  className="glass rounded-panel p-6 animate-rise sm:p-8"
+                  style={{ animationDelay: `${i * 140}ms` }}
+                >
+                  <p className="flex items-center gap-2 font-sign text-[0.95rem] font-medium text-pine-2">
+                    <L.icon size={17} aria-hidden="true" />
+                    {L.label}
+                  </p>
+                  <h2 className="type-h2 mt-3 text-ink">{ins.title}</h2>
+                  <p className="mt-3 font-read text-[1.15rem] leading-[1.75] text-slate">{ins.insight}</p>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+
+        <Unlock />
+
+        {markers.length > 0 && (
+          <section className="mx-auto max-w-3xl px-5 py-16 sm:px-8">
+            <h2 className="type-h2 text-ink">Your trail markers</h2>
+            <p className="mt-2 text-slate">What showed up at the end of each chapter.</p>
+            <ul className="mt-8 grid gap-6 sm:grid-cols-2">
+              {markers.map((m) => (
+                <li key={m.chapter} className="flex gap-4">
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-pine/10 text-pine">
+                    <ChapterIcon id={m.chapter} size={20} />
+                  </span>
+                  <div>
+                    <h3 className="font-sign text-[1.05rem] font-semibold text-ink">{m.headline}</h3>
+                    <p className="mt-1 text-[0.98rem] text-slate">{m.detail}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <ShareBlock insights={insights} />
+
+        <section className="border-t border-line bg-snow">
+          <div className="mx-auto grid max-w-3xl gap-8 px-5 py-16 sm:px-8 md:grid-cols-[auto_1fr] md:items-start">
+            <span className="grid h-14 w-14 place-items-center rounded-2xl bg-pine text-gold-hi">
+              <BookOpen size={24} aria-hidden="true" />
+            </span>
+            <div>
+              <p className="type-kicker">Coming soon</p>
+              <h2 className="type-h2 mt-1 text-ink">The 90-day Sonder Journal</h2>
+              <p className="mt-3 text-slate">
+                Your report, turned into a printed journal with one small challenge a day.{" "}
+                <Link href="/journal" className="font-sign font-semibold text-pine underline-offset-4 hover:underline">
+                  See what&rsquo;s inside
+                </Link>
+              </p>
+              <div className="mt-6 max-w-lg">
+                <WaitlistForm tone="light" id="preview-waitlist" />
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+      <SiteFooter />
+    </div>
+  );
+}
+
+// ─── Unlock ───────────────────────────────────────────────────────────────────
+
+function Unlock() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function checkout() {
+    setLoading(true);
+    setError(null);
     try {
       const res = await fetch("/api/create-checkout", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok || !data.url) throw new Error("Could not start checkout.");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.url) throw new Error(data.error || "Checkout couldn't open. Please try again.");
       window.location.href = data.url;
-    } catch {
-      setCheckoutError("Something went wrong. Please try again.");
-      setCheckoutLoading(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Checkout couldn't open. Please try again.");
+      setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen bg-[#F9F7F4] flex flex-col">
-      {/* Nav */}
-      <header className="px-6 sm:px-10 py-5 border-b border-stone-light/30">
-        <span className="font-serif text-3xl font-bold text-forest">
-          Sonder
-        </span>
-      </header>
-
-      <main className="flex-1 max-w-2xl w-full mx-auto px-6 sm:px-8 py-10 pb-20">
-        {/* Title */}
-        <div className="mb-10">
-          <p className="text-xs font-medium text-forest tracking-widest uppercase mb-1">
-            Your First Sonder
-          </p>
-          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-bark">
-            Three truths from your sonder.
-          </h1>
-          <p className="text-stone text-sm mt-2">
-            These emerged from your answers. The full picture is below.
-          </p>
-        </div>
-
-        {/* Free preview insight cards */}
-        <div className="flex flex-col gap-4 mb-6">
-          {previewInsights.map((insight, i) => (
-            <InsightCard key={i} insight={insight} index={i} />
-          ))}
-        </div>
-
-        {/* CTA — top */}
-        <div className="mb-10">
-          <CheckoutButtons
-            checkoutLoading={checkoutLoading}
-            checkoutError={checkoutError}
-            onCheckout={handleCheckout}
-          />
-        </div>
-
-        {/* Share prompt */}
-        <p
-          className="text-center mb-8"
-          style={{
-            fontFamily: "var(--font-playfair), Georgia, serif",
-            fontStyle: "italic",
-            fontSize: "13px",
-            color: "#8A8278",
-            lineHeight: 1.6,
-          }}
-        >
-          If Sonder helped you, share it with one person who would understand. This works better quietly.
-        </p>
-
-        {/* Share button */}
-        <div className="flex flex-col items-center gap-1.5 mb-12">
-          <button
-            onClick={handleShare}
-            disabled={shareLoading}
-            className={`w-full sm:w-auto px-8 py-3 rounded-full font-medium text-sm tracking-wide transition-colors duration-200 ${
-              shareLoading
-                ? "border border-stone-light text-stone cursor-not-allowed"
-                : "border-forest text-forest hover:bg-forest/6 cursor-pointer"
-            }`}
-            style={shareLoading ? undefined : { borderWidth: "1.5px", borderStyle: "solid", borderColor: "#2D4A2E", color: "#2D4A2E" }}
-          >
-            {shareLoading ? "Generating image…" : "Share Your Sonder"}
-          </button>
-          <p className="text-xs text-stone">Share with one thoughtful person. This works better quietly than loudly.</p>
-        </div>
-
-        {/* Locked sections */}
-        <div className="mb-10">
-          <p className="text-xs font-medium text-stone uppercase tracking-widest mb-4">
-            Full Report — 9 Sections
-          </p>
-          <div className="flex flex-col gap-3">
-            {LOCKED_SECTION_TITLES.map((title) => (
-              <LockedSection key={title} title={title} />
-            ))}
+    <section className="px-3 py-10 sm:px-6">
+      <div className="relative mx-auto max-w-4xl overflow-hidden rounded-[28px] bg-pine text-snow shadow-[0_40px_80px_-40px_rgb(20_40_32/0.8)]">
+        <div aria-hidden="true" className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[radial-gradient(circle,rgb(237_183_92/0.35),transparent_65%)]" />
+        <div className="relative grid gap-10 p-7 sm:p-10 md:grid-cols-[1fr_1.05fr] md:gap-12 md:p-12">
+          <div>
+            <p className="type-kicker text-gold-hi">The summit</p>
+            <h2 className="type-h1 mt-2">Read your full report.</h2>
+            <p className="mt-4 text-snow/80">
+              Nine sections that go far deeper than these three insights, ending with books, prompts,
+              and practices for your next 90 days.
+            </p>
+            <p className="mt-7 flex items-baseline gap-2">
+              <span className="font-sign text-6xl font-bold leading-none">{REPORT_PRICE_LABEL}</span>
+              <span className="font-sign text-snow/70">one time</span>
+            </p>
+            <button onClick={checkout} disabled={loading} className="btn btn-primary mt-6 w-full sm:w-auto">
+              {loading ? <LoaderCircle size={18} className="animate-spin" aria-hidden="true" /> : <Lock size={17} aria-hidden="true" />}
+              {loading ? "Opening secure checkout" : `Unlock my report for ${REPORT_PRICE_LABEL}`}
+            </button>
+            {error && (
+              <p role="alert" className="mt-3 font-sign text-sm text-gold-hi">
+                {error}
+              </p>
+            )}
+            <ul className="mt-6 space-y-2 font-sign text-[0.92rem] text-snow/70">
+              <li className="flex items-center gap-2">
+                <ShieldCheck size={15} aria-hidden="true" /> Secure checkout by Stripe
+              </li>
+              <li className="flex items-center gap-2">
+                <Clock size={15} aria-hidden="true" /> Written in 2 to 3 minutes, just for you
+              </li>
+              <li className="flex items-center gap-2">
+                <Download size={15} aria-hidden="true" /> Download it as a PDF to keep
+              </li>
+            </ul>
           </div>
+          <ol className="grid content-start gap-1.5 rounded-2xl bg-white/[0.06] p-3 sm:p-4" aria-label="What's in the full report">
+            {REPORT_SECTIONS.map((sec, i) => (
+              <li key={sec.title} className="flex items-center gap-3 rounded-xl px-2.5 py-2">
+                <span className="w-6 text-right font-sign text-sm tabular-nums text-snow/45">{i + 1}</span>
+                <span className="flex-1 font-sign text-[1.02rem] text-snow/90">{sec.title}</span>
+                <Lock size={14} className="text-gold-hi/70" aria-hidden="true" />
+              </li>
+            ))}
+          </ol>
         </div>
+      </div>
+    </section>
+  );
+}
 
-        {/* CTA — bottom */}
-        <CheckoutButtons
-          checkoutLoading={checkoutLoading}
-          checkoutError={checkoutError}
-          onCheckout={handleCheckout}
-        />
-      </main>
+// ─── Share ────────────────────────────────────────────────────────────────────
 
-      {/* Hidden share card — rendered off-screen for html2canvas capture */}
+function ShareBlock({ insights }: { insights: Insight[] }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [busy, setBusy] = useState(false);
+  const host = useSyncExternalStore(
+    () => () => {},
+    () => window.location.host,
+    () => ""
+  );
+
+  const share = useCallback(async () => {
+    if (!cardRef.current) return;
+    setBusy(true);
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const canvas = await html2canvas(cardRef.current, { scale: 1, width: 1080, height: 1080, backgroundColor: "#213F35", logging: false });
+      const blob: Blob | null = await new Promise((r) => canvas.toBlob(r, "image/png"));
+      if (!blob) return;
+      const file = new File([blob], "my-sonder-insights.png", { type: "image/png" });
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: "My Sonder insights", text: `Come inward: ${window.location.origin}` });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "my-sonder-insights.png";
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (err) {
+      if ((err as Error)?.name !== "AbortError") console.error("Share failed:", err);
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  return (
+    <section className="mx-auto max-w-3xl px-5 pb-16 sm:px-8">
+      <div className="flex flex-col items-start gap-5 rounded-panel border border-line bg-snow/60 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-7">
+        <div>
+          <h2 className="type-h3 text-ink">Know someone who&rsquo;d get this?</h2>
+          <p className="mt-1 text-slate">Save your three insights as an image to share with one person.</p>
+        </div>
+        <button onClick={share} disabled={busy} className="btn btn-secondary btn-sm shrink-0">
+          {busy ? <LoaderCircle size={17} className="animate-spin" aria-hidden="true" /> : <Share2 size={17} aria-hidden="true" />}
+          {busy ? "Making image" : "Share my insights"}
+        </button>
+      </div>
+
+      {/* Off-screen card captured as the share image */}
       <div
-        ref={shareCardRef}
+        ref={cardRef}
         aria-hidden="true"
-        style={{
-          position: "fixed",
-          left: "-9999px",
-          top: 0,
-          width: "1080px",
-          height: "1080px",
-          backgroundColor: "#F5F0E8",
-          padding: "52px 64px 44px",
-          boxSizing: "border-box",
-          display: "flex",
-          flexDirection: "column",
-          fontFamily: "Georgia, 'Times New Roman', serif",
-        }}
+        className="fixed left-[-9999px] top-0 flex h-[1080px] w-[1080px] flex-col bg-pine p-[72px] text-snow"
       >
-        {/* Wordmark */}
-        <div style={{ fontSize: "30px", fontWeight: "bold", color: "#3D5A3E", marginBottom: "28px", letterSpacing: "-0.5px" }}>
-          Sonder
-        </div>
-
-        {/* Cards */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "14px" }}>
-          {previewInsights.map((insight, i) => (
-            <div
-              key={i}
-              style={{
-                flex: 1,
-                backgroundColor: i === 1 ? "rgba(122,158,126,0.12)" : "rgba(61,90,62,0.06)",
-                border: "1px solid rgba(184,178,168,0.35)",
-                borderRadius: "4px",
-                padding: "18px 28px",
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-              }}
-            >
-              <div style={{ fontSize: "10px", fontWeight: "700", color: "#3D5A3E", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: "8px", fontFamily: "system-ui, sans-serif" }}>
-                {insight.title}
-              </div>
-              <div style={{ fontSize: "15px", color: "#2A2620", lineHeight: "1.55", fontFamily: "Georgia, serif" }}>
-                {truncateToTwoSentences(insight.insight)}
-              </div>
+        <p className="font-sign text-[40px] font-bold">Sonder</p>
+        <div className="mt-10 flex flex-1 flex-col gap-6">
+          {insights.map((ins, i) => (
+            <div key={i} className="flex flex-1 flex-col justify-center rounded-[24px] bg-white/[0.07] px-10 py-6">
+              <p className="font-sign text-[30px] font-semibold text-gold-hi">{ins.title}</p>
+              <p className="mt-3 font-read text-[24px] leading-[1.45] text-snow/90">{firstSentences(ins.insight, 2)}</p>
             </div>
           ))}
         </div>
-
-        {/* Footer */}
-        <div style={{ marginTop: "22px", fontSize: "12px", color: "#8A8278", textAlign: "center", fontFamily: "system-ui, sans-serif", letterSpacing: "0.02em" }}>
-          sonder-me.com — Know yourself deeply
-        </div>
+        <p className="mt-8 font-sign text-[24px] text-snow/60">Come inward. {host}</p>
       </div>
-    </div>
+    </section>
   );
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function truncateToTwoSentences(text: string): string {
-  const sentences = text.split(". ");
-  if (sentences.length <= 2) return text;
-  const truncated = sentences.slice(0, 2).join(". ");
-  return truncated.endsWith(".") ? truncated : truncated + ".";
-}
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function CheckoutButtons({
-  checkoutLoading,
-  checkoutError,
-  onCheckout,
-}: {
-  checkoutLoading: boolean;
-  checkoutError: string | null;
-  onCheckout: () => void;
-}) {
-  return (
-    <div className="flex flex-col items-center text-center gap-3 pt-4">
-      <button
-        onClick={onCheckout}
-        disabled={checkoutLoading}
-        className={`w-full sm:w-auto inline-block font-medium text-base px-10 py-4 rounded-full tracking-wide transition-colors duration-200 text-center ${
-          checkoutLoading
-            ? "bg-stone-light/40 text-stone cursor-not-allowed"
-            : "bg-forest text-parchment hover:bg-forest-light cursor-pointer"
-        }`}
-      >
-        {checkoutLoading ? "Redirecting to checkout…" : "Sonder Deeper — $5"}
-      </button>
-      {checkoutError && (
-        <p className="text-xs text-bark">{checkoutError}</p>
-      )}
-      <p
-        style={{
-          fontFamily: "var(--font-playfair), Georgia, serif",
-          fontStyle: "italic",
-          fontSize: "13px",
-          color: "#B8B2A8",
-          lineHeight: 1.6,
-        }}
-      >
-        Your full report takes two to three minutes to write. We don&rsquo;t rush this part.
-      </p>
-      <p className="text-xs text-stone max-w-xs leading-relaxed">
-        One-time payment. Your report is yours to download. We never store
-        your data.
-      </p>
-      <a
-        href="/report?tester=true"
-        className="w-full sm:w-auto inline-block font-medium text-base px-10 py-4 rounded-full tracking-wide transition-colors duration-200 text-center bg-forest text-parchment hover:bg-forest-light"
-      >
-        View Full Report (Testers Only)
-      </a>
-    </div>
-  );
-}
-
-function InsightCard({
-  insight,
-  index,
-}: {
-  insight: PreviewInsight;
-  index: number;
-}) {
-  const accents = ["bg-forest/6", "bg-sage/10", "bg-forest/6"];
-  return (
-    <div
-      className={`${accents[index]} border border-stone-light/30 rounded px-6 py-5`}
-    >
-      <p className="text-xs font-semibold text-forest uppercase tracking-widest mb-2">
-        {insight.title}
-      </p>
-      <p className="text-bark text-sm sm:text-base leading-relaxed">
-        {insight.insight}
-      </p>
-    </div>
-  );
-}
-
-function LockedSection({ title }: { title: string }) {
-  return (
-    <div className="bg-white border border-stone-light/30 rounded px-5 py-4">
-      {/* Title row with Locked badge */}
-      <div className="flex items-center justify-between gap-3 mb-2">
-        <p className="font-serif font-semibold text-bark">{title}</p>
-        <span
-          className="shrink-0 text-stone border border-stone-light/50 px-3 py-1 rounded-full"
-          style={{ fontSize: "12px", letterSpacing: "0.04em" }}
-        >
-          Locked
-        </span>
-      </div>
-      {/* Teaser */}
-      <p className="text-sm text-stone leading-relaxed" style={{ fontStyle: "italic" }}>
-        {LOCKED_SECTION_TEASERS[title] ?? ""}
-      </p>
-    </div>
-  );
+function firstSentences(text: string, n: number) {
+  const parts = text.match(/[^.!?]+[.!?]+/g);
+  return parts ? parts.slice(0, n).join("").trim() : text;
 }
