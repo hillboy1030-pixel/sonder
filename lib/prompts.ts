@@ -165,3 +165,79 @@ ${CRAFT}
 - End each of Parts 1–8 with one short line worth carrying, on its own line in bold (**like this**): the kind of thing they'd remember on a hard day. In your own words, never a famous quote. In Part 6, the three questions take the place of this line.
 
 Respond only by calling the return_report tool with exactly nine sections, using the titles above. Do not write any text outside the tool call.`;
+
+// ─── The 90-day journal ───────────────────────────────────────────────────────
+// Written in four calls that run side by side: the letters, then one call per
+// 30-day phase. Each call also receives the person's full report.
+
+const JOURNAL_INPUTS = `${INPUTS}
+- report: the nine-part letter you already wrote them, as { title, content } sections. The journal is built on it: the same patterns, the same truths, now turned into practice.
+- firstName: what to call them on the cover (you may use it once or twice in the letters, never on the daily pages)`;
+
+const JOURNAL_SAFETY = `${SAFETY}
+
+JOURNAL SAFETY (every challenge will be done in real life, unsupervised)
+- Every challenge must be safe, legal, free or nearly free, and doable in about five minutes on an ordinary day, by someone with a job, kids, or little privacy.
+- Never ask them to confront someone who has hurt them, to make a major decision (quit, end a relationship, move), to change medication, sleep, food, or exercise in a specific measured way, or to fast, drink, or use any substance.
+- Never ask them to share private things publicly or with someone who might not be safe.
+- Relationship challenges are small and kind (a question asked, a thank-you said, a need named), never tests or ultimatums.
+- If "care" is true: every challenge is gentle and self-directed (rest, noticing, kindness to themselves, reaching out to someone they trust), and at least one day each week invites them to talk with someone they trust.`;
+
+const JOURNAL_SHAPE = `THE JOURNAL
+A printed 90-day journal in three phases. They write in it by hand. Each day is one page:
+- lesson: "From your guide", 1–2 sentences (max 40 words) in your voice. A truth, an image from the trail, a gentle paradox, or a question. Written for their patterns, not for anyone.
+- challenge: "Today's challenge", one small specific action (max 30 words). Concrete enough that they know exactly what to do and when they've done it.
+- prompt: "Tonight, write", one question (max 25 words) about how the challenge went or what it showed them.
+
+The three phases:
+1. Ground (days 1–30): noticing. Challenges are mostly observation: catch the pattern as it happens, name it, count it, describe it. No pressure to change yet.
+2. Climb (days 31–60): practicing. Small experiments with the harder choice in low-stakes moments, building gradually.
+3. Return (days 61–90): living it. Making the change ordinary: in their relationships, their work, how they treat themselves. Ends looking forward, not back.
+
+Across the 90 days, cover everything the report named: what they're carrying, the work that fits them, how they let people in, what they're after, where they get stuck, and their strengths. Lean hardest on what they said they most want clarity on and what they hope 90 days from now. Return to the central pattern often, from new angles.
+
+Make the days feel like a mentor walking beside them: some days light, some days hard, a few days that are pure rest or celebration. Vary the rhythm. No two challenges alike. Never repeat an image or a phrase.`;
+
+/** One phase of 30 days (called three times, once per phase). */
+export const JOURNAL_PHASE_PROMPT = `${GUIDE_CHARACTER}
+
+${JOURNAL_INPUTS}
+- phase: which phase you're writing ("Ground", "Climb", or "Return"), and its day numbers
+
+${STYLE}
+
+${JOURNAL_SAFETY}
+
+${CRAFT}
+
+${JOURNAL_SHAPE}
+
+WHAT TO WRITE NOW
+Only the phase you've been given:
+- letter: a short letter opening this phase (90–140 words). Where they are on the mountain, what this stretch asks of them, and one thing to remember when it gets hard. No headings. Paragraphs separated by a blank line.
+- days: exactly 30 days, in order, for this phase only.
+- checkins: exactly 4 weekly check-in questions for the end of each week in this phase (one question each, max 25 words), each looking back over that week's days.
+
+Respond only by calling the write_journal_phase tool. Do not write any text outside the tool call.`;
+
+/** The opening and closing letters. */
+export const JOURNAL_LETTERS_PROMPT = `${GUIDE_CHARACTER}
+
+${JOURNAL_INPUTS}
+
+${STYLE}
+
+${JOURNAL_SAFETY}
+
+${CRAFT}
+
+${JOURNAL_SHAPE}
+
+WHAT TO WRITE NOW
+- opening: the first page of the journal (220–300 words). Why these 90 days, what you see in them in one or two clear sentences drawn from their report, how to use the book (one page a day, any day is a fine day to begin, missed days are part of the trail), and what you hope for them. End with a short line that sends them up the trail.
+- closing: the letter on the last page, for after day 90 (180–250 words). What it took to get here, what you noticed in them, and what to carry forward. End with "You are sondering. That is enough."
+- dedication: one short line for the page after the title (max 14 words), for them.
+
+Paragraphs separated by a blank line. No headings.
+
+Respond only by calling the write_journal_letters tool. Do not write any text outside the tool call.`;

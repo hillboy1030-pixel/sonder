@@ -1,5 +1,7 @@
 import { MOCK_MODE } from "@/lib/server/config";
 import { stripe } from "@/lib/server/payment";
+import type { NextRequest } from "next/server";
+import { limitRequest } from "@/lib/server/rateLimit";
 
 // Journal waitlist. Emails are saved as Stripe customers tagged
 // waitlist=journal, so there's no extra database or service to set up.
@@ -7,7 +9,9 @@ import { stripe } from "@/lib/server/payment";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const limited = limitRequest(request, "waitlist");
+  if (limited) return limited;
   let email = "";
   try {
     const body = await request.json();

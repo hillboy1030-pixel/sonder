@@ -2,8 +2,12 @@ import { REPORT_PRICE_CENTS } from "@/lib/pricing";
 import { MOCK_MODE, originFrom } from "@/lib/server/config";
 import { MOCK_SESSION_ID, REPORT_PRODUCT_TAG, stripe } from "@/lib/server/payment";
 import { isTester } from "@/lib/server/tester";
+import type { NextRequest } from "next/server";
+import { limitRequest } from "@/lib/server/rateLimit";
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const limited = limitRequest(request, "checkout");
+  if (limited) return limited;
   const origin = originFrom(request);
   const body = await request.json().catch(() => ({}));
 

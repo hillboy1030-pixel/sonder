@@ -7,6 +7,7 @@ import { contextNeedsCare } from "@/lib/safety";
 import { MOCK_PREVIEW, mockDelay } from "@/lib/server/mockData";
 import { aiErrorResponse } from "@/lib/server/aiErrors";
 import { extractStructured } from "@/lib/server/extract";
+import { limitRequest } from "@/lib/server/rateLimit";
 
 // Fast call: only the 3 free preview cards (~15–25s)
 export const maxDuration = 60;
@@ -42,6 +43,8 @@ const PREVIEW_TOOL: Anthropic.Tool = {
 };
 
 export async function POST(request: NextRequest) {
+  const limited = limitRequest(request, "preview");
+  if (limited) return limited;
   let body: { scores?: unknown; context?: unknown };
   try {
     body = await request.json();
