@@ -1,3 +1,9 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// The 72 assessment statements, grouped by the research framework they come from.
+// Changing an item's wording can change what it measures, so treat edits here as
+// part of the psychologist review.
+// ─────────────────────────────────────────────────────────────────────────────
+
 export type Question = {
   id: number;       // 1-indexed, global (1–72)
   text: string;
@@ -11,6 +17,10 @@ export type SectionDef = {
   framework: string;
   scaleLow: string;
   scaleHigh: string;
+  /** The five answer labels, low to high, matching the published instrument's anchors. */
+  scaleLabels: [string, string, string, string, string];
+  /** Short question shown above the answer options. */
+  ask: string;
   questions: Question[];
 };
 
@@ -19,8 +29,10 @@ export const SECTIONS: SectionDef[] = [
     title: "Understanding Your Personality",
     subtitle: "Rate how accurately each statement describes you.",
     framework: "Big Five / IPIP-NEO-30",
-    scaleLow: "Strongly Disagree",
-    scaleHigh: "Strongly Agree",
+    scaleLow: "Very inaccurate",
+    scaleHigh: "Very accurate",
+    scaleLabels: ["Very inaccurate", "Moderately inaccurate", "Neither", "Moderately accurate", "Very accurate"],
+    ask: "How accurately does this describe you?",
     questions: [
       { id: 1,  text: "I worry about things.",                                      reverse: false, dimension: "Neuroticism" },
       { id: 2,  text: "I get angry easily.",                                        reverse: false, dimension: "Neuroticism" },
@@ -58,8 +70,10 @@ export const SECTIONS: SectionDef[] = [
     title: "Your Career Interests",
     subtitle: "Rate how much you enjoy each type of activity.",
     framework: "Holland Code / O*NET",
-    scaleLow: "Strongly Dislike",
-    scaleHigh: "Really Enjoy",
+    scaleLow: "Strongly dislike",
+    scaleHigh: "Strongly like",
+    scaleLabels: ["Strongly dislike", "Dislike", "Unsure", "Like", "Strongly like"],
+    ask: "How much would you enjoy this?",
     questions: [
       { id: 31, text: "Fix a broken appliance or piece of furniture.",              reverse: false, dimension: "Realistic" },
       { id: 32, text: "Operate a machine on an assembly line.",                     reverse: false, dimension: "Realistic" },
@@ -85,8 +99,10 @@ export const SECTIONS: SectionDef[] = [
     title: "Your Relationship Style",
     subtitle: "Rate how accurately each statement describes you in close relationships.",
     framework: "Attachment Style / ECR-12",
-    scaleLow: "Strongly Disagree",
-    scaleHigh: "Strongly Agree",
+    scaleLow: "Strongly disagree",
+    scaleHigh: "Strongly agree",
+    scaleLabels: ["Strongly disagree", "Disagree", "Neutral", "Agree", "Strongly agree"],
+    ask: "How much do you agree?",
     questions: [
       { id: 49, text: "I prefer not to show others how I feel deep down.",           reverse: false, dimension: "Avoidance" },
       { id: 50, text: "I worry about being abandoned by those I care about.",        reverse: false, dimension: "Anxiety" },
@@ -106,8 +122,10 @@ export const SECTIONS: SectionDef[] = [
     title: "Your Inner Strengths",
     subtitle: "Rate how accurately each statement describes you.",
     framework: "Character Strengths / IPIP-VIA",
-    scaleLow: "Strongly Disagree",
-    scaleHigh: "Strongly Agree",
+    scaleLow: "Very much unlike me",
+    scaleHigh: "Very much like me",
+    scaleLabels: ["Very much unlike me", "Unlike me", "Neutral", "Like me", "Very much like me"],
+    ask: "How much is this like you?",
     questions: [
       { id: 61, text: "I am always coming up with new and different ideas.",         reverse: false, dimension: "Creativity" },
       { id: 62, text: "I find the world a very interesting place.",                  reverse: false, dimension: "Curiosity" },

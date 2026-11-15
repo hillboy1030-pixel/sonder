@@ -1,777 +1,797 @@
 "use client";
 
-export const dynamic = "force-dynamic";
-
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { SECTIONS, TOTAL_QUESTIONS } from "@/lib/questions";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  Clock,
+  Flag,
+  Keyboard,
+  RotateCcw,
+  ShieldCheck,
+} from "lucide-react";
+import { SECTIONS } from "@/lib/questions";
 import { calculateScores } from "@/lib/scoring";
+import { CHAPTERS, trailMarkerFor, type ChapterId } from "@/lib/chapters";
+import { INTAKE_STEPS, joinClarityGoals, type IntakeStep } from "@/lib/intake";
+import { KEYS, remove, writeJSON } from "@/lib/storage";
+import { useStored } from "@/lib/useStored";
+import { Logo } from "@/components/Logo";
+import { MountainScene } from "@/components/MountainScene";
+import { TrailProgress } from "@/components/TrailProgress";
+import { ChapterIcon } from "@/components/ChapterIcon";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── State ────────────────────────────────────────────────────────────────────
 
-type SonderContext = {
-  ageRange: string;
-  relationshipStatus: string;
-  hasChildren: string;
-  workField: string;
-  hobby: string;
-  clarityGoal: string;
-  hardestThing: string;
-  socialPerception: string;
-  tooMuch: string;
-  lifeStage: string;
-  worstSelf: string;
+type Phase = "welcome" | "intake" | "intro" | "question" | "marker";
+
+type Progress = {
+  phase: Phase;
+  intakeIndex: number;
+  /** Index into CHAPTERS (1–4 are the question chapters). */
+  chapter: number;
+  qIndex: number;
+  answers: Record<number, number>;
+  /** Raw intake answers. Multi-select values are joined with "|". */
+  context: Record<string, string>;
 };
 
-// ─── Dev-only test data ───────────────────────────────────────────────────────
+const START: Progress = { phase: "welcome", intakeIndex: 0, chapter: 1, qIndex: 0, answers: {}, context: {} };
 
-const DEV_SCORES = {
-  bigFive: { Neuroticism: 53, Extraversion: 80, Openness: 83, Agreeableness: 83, Conscientiousness: 77 },
-  holland: { Realistic: 47, Investigative: 27, Artistic: 60, Social: 80, Enterprising: 80, Conventional: 33 },
-  attachment: { Avoidance: 43, Anxiety: 47 },
-  topStrengths: ["Creativity", "Curiosity", "Perspective", "Honesty", "Zest"],
-  allStrengths: {
-    Creativity: 5, Curiosity: 5, Perspective: 5, Bravery: 4, Perseverance: 2,
-    Honesty: 5, Zest: 5, Kindness: 5, "Social Intelligence": 5, Teamwork: 5,
-    Fairness: 4, Humility: 4,
-  },
+const MINUTES: Record<ChapterId, number> = { basecamp: 3, terrain: 4, path: 2, company: 2, carry: 2 };
+const FRAMEWORK: Record<ChapterId, string> = {
+  basecamp: "Sonder's own questions",
+  terrain: "Adapted from the IPIP-NEO (Big Five)",
+  path: "Adapted from the O*NET Interest Profiler (Holland codes)",
+  company: "Adapted from the ECR relationship scales",
+  carry: "Adapted from the VIA character strengths",
 };
 
-const DEV_CONTEXT: SonderContext = {
-  ageRange: "35–44",
-  relationshipStatus: "Married",
-  hasChildren: "Yes",
-  workField: "Financial advisor for State Farm, just started.",
-  hobby: "I've been playing pool (8ball, 9ball) for 20 years and love it. Still competing and practicing every week. It's my passion.",
-  clarityGoal: "career direction, relationships, and who I am as a person",
-  hardestThing: "Starting a new career at State Farm while trying to be present for my family",
-  socialPerception: "They say I'm always on, always helping, never seem to need anything",
-  tooMuch: "My need to see potential in everyone and everything",
-  lifeStage: "Navigating",
-  worstSelf: "Intellectualize and analyze everything",
-};
+const ADVANCE_DELAY = 260;
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AssessmentPage() {
   const router = useRouter();
-  const [intakeStep, setIntakeStep] = useState<"screen1" | "screen2" | "questions">("screen1");
-  const [context, setContext] = useState<SonderContext>({
-    ageRange: "",
-    relationshipStatus: "",
-    hasChildren: "",
-    workField: "",
-    hobby: "",
-    clarityGoal: "",
-    hardestThing: "",
-    socialPerception: "",
-    tooMuch: "",
-    lifeStage: "",
-    worstSelf: "",
-  });
-  const [answers, setAnswers] = useState<Record<number, number>>({});
-  const [sectionIndex, setSectionIndex] = useState(0);
+  const [p, setP] = useState<Progress>(START);
+  const stored = useStored<Progress>(KEYS.progress);
+  const [dismissed, setDismissed] = useState(false);
+  const loaded = stored !== undefined;
+  const saved = !dismissed && stored && stored.phase !== "welcome" ? stored : null;
+  const [pending, setPending] = useState<number | null>(null);
+  const advancing = useRef(false);
 
-  const section = SECTIONS[sectionIndex];
-  const isLastSection = sectionIndex === SECTIONS.length - 1;
-
-  const answeredInSection = section.questions.filter(
-    (q) => answers[q.id] !== undefined
-  ).length;
-  const allAnswered = answeredInSection === section.questions.length;
-  const remaining = section.questions.length - answeredInSection;
-
-  const totalAnswered = Object.keys(answers).length;
-  const progressPct = Math.round((totalAnswered / TOTAL_QUESTIONS) * 100);
+  // Save after every step so a closed tab doesn't lose the climb.
+  useEffect(() => {
+    if (p.phase !== "welcome") writeJSON(KEYS.progress, p);
+  }, [p]);
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [sectionIndex, intakeStep]);
+    window.scrollTo({ top: 0 });
+  }, [p.phase, p.intakeIndex, p.chapter]);
 
-  function handleAnswer(questionId: number, value: number) {
-    setAnswers((prev) => ({ ...prev, [questionId]: value }));
-  }
+  const chapter = CHAPTERS[p.phase === "intake" || p.phase === "welcome" ? 0 : p.chapter];
+  const section = chapter.sectionIndex !== null ? SECTIONS[chapter.sectionIndex] : null;
 
-  function handleScreen1Continue() {
-    setIntakeStep("screen2");
-  }
-
-  function handleScreen2Continue() {
-    localStorage.setItem("sonder_context", JSON.stringify(context));
-    setIntakeStep("questions");
-  }
-
-  function handleDevFill() {
-    localStorage.removeItem("sonder_report");
-    localStorage.setItem("sonder_scores", JSON.stringify(DEV_SCORES));
-    localStorage.setItem("sonder_context", JSON.stringify(DEV_CONTEXT));
-    router.push("/preview");
-  }
-
-  function handleNext() {
-    if (!allAnswered) return;
-    if (!isLastSection) {
-      setSectionIndex((i) => i + 1);
-    } else {
-      const scores = calculateScores(answers);
-      localStorage.setItem("sonder_scores", JSON.stringify(scores));
+  const finish = useCallback(
+    (prog: Progress) => {
+      const scores = calculateScores(prog.answers);
+      const ctx: Record<string, string> = { ...prog.context };
+      ctx.clarityGoal = joinClarityGoals((prog.context.clarityGoal ?? "").split("|").filter(Boolean));
+      const markers = CHAPTERS.slice(1)
+        .map((c) => ({ chapter: c.id, ...trailMarkerFor(c.id, scores) }))
+        .filter((m) => m.headline);
+      writeJSON(KEYS.scores, scores);
+      writeJSON(KEYS.context, ctx);
+      writeJSON(KEYS.markers, markers);
+      remove(KEYS.preview, KEYS.report, KEYS.session, KEYS.progress);
       router.push("/preview");
+    },
+    [router]
+  );
+
+  // ── Navigation ──────────────────────────────────────────────────────────────
+
+  const next = useCallback(() => {
+    setP((cur) => {
+      if (cur.phase === "intake") {
+        return cur.intakeIndex < INTAKE_STEPS.length - 1
+          ? { ...cur, intakeIndex: cur.intakeIndex + 1 }
+          : { ...cur, phase: "intro", chapter: 1, qIndex: 0 };
+      }
+      if (cur.phase === "intro") return { ...cur, phase: "question", qIndex: 0 };
+      if (cur.phase === "question") {
+        const n = SECTIONS[CHAPTERS[cur.chapter].sectionIndex!].questions.length;
+        return cur.qIndex < n - 1 ? { ...cur, qIndex: cur.qIndex + 1 } : { ...cur, phase: "marker" };
+      }
+      if (cur.phase === "marker" && cur.chapter < CHAPTERS.length - 1) {
+        return { ...cur, phase: "intro", chapter: cur.chapter + 1, qIndex: 0 };
+      }
+      return cur;
+    });
+  }, []);
+
+  const back = useCallback(() => {
+    setPending(null);
+    setP((cur) => {
+      switch (cur.phase) {
+        case "intake":
+          return cur.intakeIndex > 0 ? { ...cur, intakeIndex: cur.intakeIndex - 1 } : { ...cur, phase: "welcome" };
+        case "intro":
+          if (cur.chapter === 1) return { ...cur, phase: "intake", intakeIndex: INTAKE_STEPS.length - 1 };
+          return {
+            ...cur,
+            phase: "question",
+            chapter: cur.chapter - 1,
+            qIndex: SECTIONS[CHAPTERS[cur.chapter - 1].sectionIndex!].questions.length - 1,
+          };
+        case "question":
+          return cur.qIndex > 0 ? { ...cur, qIndex: cur.qIndex - 1 } : { ...cur, phase: "intro" };
+        case "marker":
+          return { ...cur, phase: "question" };
+        default:
+          return cur;
+      }
+    });
+  }, []);
+
+  const answerQuestion = useCallback(
+    (value: number) => {
+      if (advancing.current || p.phase !== "question" || !section) return;
+      const q = section.questions[p.qIndex];
+      advancing.current = true;
+      setPending(value);
+      setP((cur) => ({ ...cur, answers: { ...cur.answers, [q.id]: value } }));
+      window.setTimeout(() => {
+        setPending(null);
+        advancing.current = false;
+        next();
+      }, ADVANCE_DELAY);
+    },
+    [p.phase, p.qIndex, section, next]
+  );
+
+  const setContext = useCallback((key: string, value: string) => {
+    setP((cur) => ({ ...cur, context: { ...cur.context, [key]: value } }));
+  }, []);
+
+  const chooseSingle = useCallback(
+    (key: string, value: string) => {
+      if (advancing.current) return;
+      advancing.current = true;
+      setContext(key, value);
+      window.setTimeout(() => {
+        advancing.current = false;
+        next();
+      }, ADVANCE_DELAY);
+    },
+    [setContext, next]
+  );
+
+  // Number keys answer, Backspace/left arrow goes back.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const n = Number(e.key);
+      if (p.phase === "question" && n >= 1 && n <= 5) {
+        e.preventDefault();
+        answerQuestion(n);
+      } else if (p.phase === "intake") {
+        const step = INTAKE_STEPS[p.intakeIndex];
+        if (step.kind === "single" && step.options && n >= 1 && n <= step.options.length) {
+          e.preventDefault();
+          chooseSingle(step.key, step.options[n - 1]);
+        }
+      }
+      if ((e.key === "ArrowLeft" || e.key === "Backspace") && p.phase !== "welcome") {
+        e.preventDefault();
+        back();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [p.phase, p.intakeIndex, answerQuestion, chooseSingle, back]);
+
+  // ── Progress numbers for the trail ─────────────────────────────────────────
+
+  let trailChapter = 0;
+  let fraction = 0;
+  if (p.phase === "intake") {
+    fraction = p.intakeIndex / INTAKE_STEPS.length;
+  } else if (p.phase !== "welcome") {
+    trailChapter = p.chapter;
+    const n = section?.questions.length ?? 1;
+    fraction = p.phase === "intro" ? 0 : p.phase === "marker" ? 1 : p.qIndex / n;
+    if (p.phase === "marker") {
+      trailChapter = p.chapter + 1;
+      fraction = 0;
     }
   }
 
-  if (intakeStep === "screen1") {
-    return (
-      <div className="min-h-screen bg-cream flex flex-col">
-        <header className="px-6 sm:px-10 py-4 border-b border-ash">
-          <a href="/" className="font-serif-display text-xl font-bold text-forest hover:opacity-70 transition-opacity">Sonder</a>
-        </header>
-        <main className="flex-1 max-w-2xl w-full mx-auto px-6 sm:px-8 py-10 pb-20">
-          <IntakeScreen context={context} onChange={setContext} onContinue={handleScreen1Continue} />
-        </main>
-        {/* TODO: remove before public launch */}
-        <button onClick={handleDevFill} className="fixed bottom-4 left-4 z-50 bg-bark text-parchment text-xs font-medium px-3 py-2 rounded opacity-70 hover:opacity-100 transition-opacity">
-          Founder Test
-        </button>
-      </div>
-    );
-  }
-
-  if (intakeStep === "screen2") {
-    return (
-      <div className="min-h-screen bg-cream flex flex-col">
-        <header className="px-6 sm:px-10 py-4 border-b border-ash">
-          <a href="/" className="font-serif-display text-xl font-bold text-forest hover:opacity-70 transition-opacity">Sonder</a>
-        </header>
-        <main className="flex-1 max-w-2xl w-full mx-auto px-6 sm:px-8 py-10 pb-20">
-          <IntakeScreen2 context={context} onChange={setContext} onContinue={handleScreen2Continue} onBack={() => setIntakeStep("screen1")} />
-        </main>
-        {/* TODO: remove before public launch */}
-        <button onClick={handleDevFill} className="fixed bottom-4 left-4 z-50 bg-bark text-parchment text-xs font-medium px-3 py-2 rounded opacity-70 hover:opacity-100 transition-opacity">
-          Founder Test
-        </button>
-      </div>
-    );
-  }
+  const stepKey = `${p.phase}-${p.intakeIndex}-${p.chapter}-${p.qIndex}`;
 
   return (
-    <div className="min-h-screen bg-cream flex flex-col">
-      {/* ── Sticky header + progress bar ── */}
-      <header className="sticky top-0 z-50 shrink-0 bg-cream border-b border-ash">
-        <div className="px-6 sm:px-10 py-4 flex items-center justify-between">
-          <a href="/" className="font-serif-display text-xl font-bold text-forest hover:opacity-70 transition-opacity">Sonder</a>
-          <span className="text-xs text-moss uppercase tracking-widest">
-            Section {sectionIndex + 1} of {SECTIONS.length}
-          </span>
-        </div>
-        <div className="h-1 w-full bg-ash">
-          <div
-            className="h-full bg-forest transition-all duration-500 ease-out"
-            style={{ width: `${progressPct}%` }}
-          />
-        </div>
+    <div className="relative flex min-h-svh flex-col overflow-x-hidden bg-mist">
+      <MountainScene quiet className="pointer-events-none fixed inset-x-0 bottom-0 h-[30vh] w-full sm:h-[36vh]" />
+
+      <header className="relative z-10 mx-auto flex w-full max-w-3xl items-center justify-between px-5 pt-5 sm:px-6">
+        <Logo />
+        {p.phase !== "welcome" && (
+          <p className="flex items-center gap-1.5 font-sign text-sm text-stone">
+            <Check size={15} aria-hidden="true" />
+            Saved as you go
+          </p>
+        )}
       </header>
 
-      {/* ── Main content ── */}
-      <main className="flex-1 max-w-2xl w-full mx-auto px-6 sm:px-8 py-8 pb-20">
-        {/* Section header */}
-        <div className="mb-10">
-          <p className="text-xs font-medium text-moss uppercase mb-2" style={{ letterSpacing: "0.22em" }}>
-            {section.framework}
-          </p>
-          <h1 className="font-serif-display text-2xl sm:text-3xl font-bold text-bark mt-1 mb-3">
-            {section.title}
-          </h1>
-          <p className="text-bark-light text-sm mb-6 font-serif-reading leading-relaxed">{section.subtitle}</p>
-
-          {/* Section progress segments */}
-          <div className="flex items-center gap-2 mb-6">
-            {SECTIONS.map((_, i) => (
-              <div
-                key={i}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  i < sectionIndex
-                    ? "w-6 bg-forest"
-                    : i === sectionIndex
-                    ? "w-8 bg-forest"
-                    : "w-4 bg-ash"
-                }`}
-              />
-            ))}
-          </div>
-
-          {/* Scale legend — plain text, no box */}
-          <p className="text-xs text-moss text-center" style={{ letterSpacing: "0.14em" }}>
-            1 = {section.scaleLow} &nbsp;·&nbsp; 5 = {section.scaleHigh}
-          </p>
+      {p.phase !== "welcome" && (
+        <div className="relative z-10 mx-auto mt-5 w-full max-w-3xl px-3 sm:px-6">
+          <TrailProgress chapter={trailChapter} fraction={fraction} />
         </div>
+      )}
 
-        {/* Questions */}
-        <div className="divide-y divide-ash">
-          {(() => {
-            const firstUnanswered = section.questions.findIndex(
-              (q) => answers[q.id] === undefined
-            );
-            return section.questions.map((question, idx) => (
-              <QuestionItem
-                key={question.id}
-                questionId={question.id}
-                text={question.text}
-                answer={answers[question.id]}
-                scaleLow={section.scaleLow}
-                scaleHigh={section.scaleHigh}
-                onChange={(val) => handleAnswer(question.id, val)}
-                dimmed={firstUnanswered !== -1 && idx > firstUnanswered}
-              />
-            ));
-          })()}
-        </div>
-
-        {/* ── Bottom nav ── */}
-        <div className="mt-12 flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-moss">
-            {allAnswered ? (
-              <span className="text-forest font-medium">
-                ✓ All questions answered
-              </span>
-            ) : (
-              <>
-                {remaining} question{remaining !== 1 ? "s" : ""} remaining in
-                this section
-              </>
-            )}
-          </p>
-
-          <button
-            onClick={handleNext}
-            disabled={!allAnswered}
-            className={`w-full sm:w-auto px-10 py-3.5 rounded-full font-medium text-base tracking-wide transition-colors duration-300 ${
-              allAnswered
-                ? "border border-forest text-forest hover:bg-forest/10 cursor-pointer"
-                : "border border-ash text-moss cursor-not-allowed"
-            }`}
-          >
-            {isLastSection ? "See My Results" : "Next Section →"}
-          </button>
+      <main className="relative z-10 flex flex-1 items-start justify-center px-4 pb-[22vh] pt-6 sm:items-center sm:pb-[26vh] sm:pt-8">
+        <div key={stepKey} className="glass w-full max-w-2xl rounded-panel p-6 animate-rise sm:p-10">
+          {!loaded ? (
+            <div className="h-64" />
+          ) : p.phase === "welcome" ? (
+            <Welcome
+              saved={saved}
+              onResume={() => saved && setP(saved)}
+              onReset={() => {
+                remove(KEYS.progress);
+                setDismissed(true);
+              }}
+              onStart={() => {
+                remove(KEYS.progress);
+                setDismissed(true);
+                setP({ ...START, phase: "intake" });
+              }}
+            />
+          ) : p.phase === "intake" ? (
+            <IntakeCard
+              step={INTAKE_STEPS[p.intakeIndex]}
+              index={p.intakeIndex}
+              value={p.context[INTAKE_STEPS[p.intakeIndex].key] ?? ""}
+              onChange={(v) => setContext(INTAKE_STEPS[p.intakeIndex].key, v)}
+              onChoose={(v) => chooseSingle(INTAKE_STEPS[p.intakeIndex].key, v)}
+              onNext={next}
+              onBack={back}
+            />
+          ) : p.phase === "intro" ? (
+            <ChapterIntro chapterIndex={p.chapter} onStart={next} onBack={back} />
+          ) : p.phase === "question" && section ? (
+            <QuestionCard
+              text={section.questions[p.qIndex].text}
+              ask={section.ask}
+              labels={section.scaleLabels}
+              number={p.qIndex + 1}
+              total={section.questions.length}
+              topic={chapter.topic}
+              value={pending ?? p.answers[section.questions[p.qIndex].id]}
+              onAnswer={answerQuestion}
+              onBack={back}
+            />
+          ) : p.phase === "marker" ? (
+            <MarkerCard
+              chapterIndex={p.chapter}
+              answers={p.answers}
+              onContinue={() => (p.chapter < CHAPTERS.length - 1 ? next() : finish(p))}
+              onBack={back}
+            />
+          ) : null}
         </div>
       </main>
 
-      {/* TODO: remove before public launch */}
-      <button
-        onClick={handleDevFill}
-        className="fixed bottom-4 left-4 z-50 bg-bark text-parchment text-xs font-medium px-3 py-2 rounded opacity-70 hover:opacity-100 transition-opacity"
-      >
-        Founder Test
-      </button>
+      {process.env.NODE_ENV === "development" && <DevFill onFill={finish} />}
     </div>
   );
 }
 
-// ─── Intake Screen 1 ──────────────────────────────────────────────────────────
+// ─── Welcome ──────────────────────────────────────────────────────────────────
 
-function IntakeScreen({
-  context,
-  onChange,
-  onContinue,
+function Welcome({
+  saved,
+  onResume,
+  onReset,
+  onStart,
 }: {
-  context: SonderContext;
-  onChange: (c: SonderContext) => void;
-  onContinue: () => void;
+  saved: Progress | null;
+  onResume: () => void;
+  onReset: () => void;
+  onStart: () => void;
 }) {
   const [agreed, setAgreed] = useState(false);
-  const [claritySelections, setClaritySelections] = useState<string[]>([]);
-  const canContinue = claritySelections.length > 0;
+  const total = Object.values(MINUTES).reduce((a, b) => a + b, 0);
 
-  function handleContinue() {
-    onChange({ ...context, clarityGoal: joinClarityGoals(claritySelections) });
-    onContinue();
+  if (saved) {
+    const where =
+      saved.phase === "intake" ? "Basecamp" : CHAPTERS[saved.chapter]?.name ?? "the trail";
+    return (
+      <div>
+        <h1 className="type-h1 text-ink">Welcome back.</h1>
+        <p className="type-lede mt-4 text-slate">
+          You stopped at <span className="font-semibold text-ink">{where}</span>. Your answers are still here, in this browser.
+        </p>
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <button onClick={onResume} className="btn btn-primary">
+            Pick up where you left off
+            <ArrowRight size={18} strokeWidth={2.25} aria-hidden="true" />
+          </button>
+          <button onClick={onReset} className="btn btn-secondary">
+            <RotateCcw size={17} aria-hidden="true" />
+            Start over
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div>
-      <div className="mb-12">
-        <p className="text-xs font-medium text-moss uppercase mb-3" style={{ letterSpacing: "0.22em" }}>
-          The first steps
-        </p>
-        <h1 className="font-serif-display text-3xl sm:text-4xl font-bold text-bark mt-2 mb-5">
-          Tell me about your life.
-        </h1>
-        <p className="text-bark-light text-lg sm:text-xl font-serif-reading leading-relaxed">
-          I&rsquo;ll use this to write for you, not someone like you.
-        </p>
-      </div>
+      <h1 className="type-h1 text-ink">Your climb has five stages.</h1>
+      <p className="type-lede mt-4 text-slate">
+        About {total} minutes. Your progress saves as you go, so you can stop and come back.
+      </p>
 
-      <div className="flex flex-col gap-10">
-        {/* Age range */}
-        <IntakeRadioGroup
-          label="How old are you?"
-          options={["Under 25", "25–34", "35–44", "45–54", "55+"]}
-          value={context.ageRange}
-          onChange={(v) => onChange({ ...context, ageRange: v })}
-          optional
+      <ol className="mt-7 space-y-1">
+        {CHAPTERS.map((c, i) => (
+          <li key={c.id} className="flex items-center gap-4 rounded-xl px-1 py-1.5">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-pine/10 text-pine">
+              <ChapterIcon id={c.id} size={19} strokeWidth={2} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-sign text-[1.05rem] font-semibold text-ink">{c.name}</span>
+              <span className="block font-sign text-[0.95rem] text-stone">{c.topic}</span>
+            </span>
+            <span className="flex shrink-0 items-center gap-1 font-sign text-sm text-stone">
+              <Clock size={14} aria-hidden="true" />
+              {MINUTES[c.id]} min
+            </span>
+            <span className="sr-only">Stage {i + 1}</span>
+          </li>
+        ))}
+      </ol>
+
+      <label className="mt-7 flex cursor-pointer items-start gap-3 rounded-[14px] border border-line bg-snow/60 p-4 transition-colors hover:border-pine/40">
+        <input
+          type="checkbox"
+          checked={agreed}
+          onChange={(e) => setAgreed(e.target.checked)}
+          className="mt-1 h-5 w-5 shrink-0 cursor-pointer accent-[#213F35]"
         />
-
-        {/* Relationship status */}
-        <IntakeRadioGroup
-          label="What's your relationship status?"
-          options={["Single", "In a relationship", "Married", "Divorced or separated"]}
-          value={context.relationshipStatus}
-          onChange={(v) => onChange({ ...context, relationshipStatus: v })}
-          optional
-        />
-
-        {/* Children */}
-        <IntakeRadioGroup
-          label="Do you have children?"
-          options={["No", "Yes"]}
-          value={context.hasChildren}
-          onChange={(v) => onChange({ ...context, hasChildren: v })}
-          optional
-        />
-
-        {/* Work field */}
-        <div>
-          <p className="text-sm font-medium text-bark mb-3">
-            What field do you work in?
-          </p>
-          <input
-            type="text"
-            maxLength={100}
-            value={context.workField}
-            onChange={(e) => onChange({ ...context, workField: e.target.value })}
-            placeholder="e.g. finance, education, healthcare..."
-            className="w-full bg-transparent border-0 border-b border-ash px-0 py-2.5 text-base text-bark placeholder:text-moss focus:outline-none focus:border-forest transition-colors font-serif-reading"
-          />
-        </div>
-
-        {/* Hobby / long-term pursuit */}
-        <div>
-          <p className="text-sm font-medium text-bark mb-3">
-            Is there a skill or pursuit you&rsquo;ve spent years refining?
-          </p>
-          <textarea
-            maxLength={150}
-            rows={3}
-            value={context.hobby}
-            onChange={(e) => onChange({ ...context, hobby: e.target.value })}
-            placeholder="e.g. chess, woodworking, distance running..."
-            className="w-full block bg-transparent border-0 border-b border-ash px-0 pt-2.5 pb-0 text-base text-bark placeholder:text-moss focus:outline-none focus:border-forest transition-colors resize-none font-serif-reading"
-          />
-        </div>
-
-        {/* Clarity goal — required, multi-select */}
-        <div>
-          <p className="text-sm font-medium text-bark mb-3">
-            What do you most want clarity on?{" "}
-            <span className="font-normal" style={{ color: "#A0524D" }}> *</span>
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {["My career direction", "My relationships", "Who I am as a person"].map((opt) => {
-              const selected = claritySelections.includes(opt);
-              return (
-                <IntakeChip
-                  key={opt}
-                  label={opt}
-                  selected={selected}
-                  onClick={() =>
-                    setClaritySelections((prev) =>
-                      prev.includes(opt) ? prev.filter((o) => o !== opt) : [...prev, opt]
-                    )
-                  }
-                />
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Disclaimer checkbox */}
-      <label className="mt-10 flex items-start gap-3 cursor-pointer">
-        <div className="relative flex-shrink-0 mt-0.5">
-          <input
-            type="checkbox"
-            checked={agreed}
-            onChange={(e) => setAgreed(e.target.checked)}
-            className="sr-only"
-          />
-          <div
-            className="w-4 h-4 rounded border transition-colors duration-150 flex items-center justify-center"
-            style={{
-              borderColor: agreed ? "#5A7250" : "#E8E3DC",
-              backgroundColor: agreed ? "#5A7250" : "transparent",
-            }}
-          >
-            {agreed && (
-              <svg width="9" height="7" viewBox="0 0 9 7" fill="none" aria-hidden="true">
-                <path d="M1 3.5L3.5 6L8 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            )}
-          </div>
-        </div>
-        <span className="text-xs text-moss leading-relaxed">
-          I understand that Sonder is a self-reflection tool and not a substitute for professional mental health care. I am 18 or older.
+        <span className="font-read text-[0.98rem] leading-relaxed text-slate">
+          I&rsquo;m 18 or older. I understand Sonder is for self-reflection and isn&rsquo;t a diagnosis
+          or a substitute for professional care.
         </span>
       </label>
 
-      <div className="mt-12 flex flex-col items-center gap-5 text-center">
-        <p className="text-sm text-moss italic font-serif-reading leading-relaxed">
-          Everything here is optional. Your answers never leave your browser.
+      <div className="mt-7 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="flex items-center gap-2 font-sign text-sm text-stone">
+          <ShieldCheck size={16} aria-hidden="true" />
+          Answers stay in your browser
         </p>
-        <button
-          onClick={handleContinue}
-          disabled={!canContinue}
-          className={`w-full sm:w-auto px-10 py-3.5 rounded-full font-medium text-base tracking-wide transition-colors duration-300 ${
-            canContinue
-              ? "border border-forest text-forest hover:bg-forest/10 cursor-pointer"
-              : "border border-ash text-moss cursor-not-allowed"
-          }`}
-        >
-          Next →
+        <button onClick={onStart} disabled={!agreed} className="btn btn-primary w-full sm:w-auto">
+          Start at basecamp
+          <ArrowRight size={18} strokeWidth={2.25} aria-hidden="true" />
         </button>
       </div>
     </div>
   );
 }
 
-// ─── Intake Screen 2 ──────────────────────────────────────────────────────────
+// ─── Basecamp (intake) ────────────────────────────────────────────────────────
 
-function IntakeScreen2({
-  context,
+function IntakeCard({
+  step,
+  index,
+  value,
   onChange,
-  onContinue,
+  onChoose,
+  onNext,
   onBack,
 }: {
-  context: SonderContext;
-  onChange: (c: SonderContext) => void;
-  onContinue: () => void;
+  step: IntakeStep;
+  index: number;
+  value: string;
+  onChange: (v: string) => void;
+  onChoose: (v: string) => void;
+  onNext: () => void;
   onBack: () => void;
 }) {
-  const canContinue = context.worstSelf !== "";
+  const selected = step.kind === "multi" ? value.split("|").filter(Boolean) : [];
+  const canContinue = !step.required || (step.kind === "multi" ? selected.length > 0 : value.trim() !== "");
+  const inputRef = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if ((step.kind === "text" || step.kind === "longtext") && window.matchMedia("(pointer: fine)").matches) {
+      inputRef.current?.focus();
+    }
+  }, [step.kind]);
 
   return (
     <div>
-      <button
-        onClick={onBack}
-        className="text-xs text-moss hover:text-bark transition-colors mb-8 flex items-center gap-1"
-      >
-        ← Back
-      </button>
+      <CardMeta
+        left={
+          <>
+            <ChapterIcon id="basecamp" size={16} />
+            Basecamp
+          </>
+        }
+        right={`${index + 1} of ${INTAKE_STEPS.length}`}
+      />
+      <h1 className="type-h2 mt-4 text-ink">
+        {step.prompt}
+        {step.required && <span className="sr-only"> (required)</span>}
+      </h1>
+      {step.help && <p className="mt-3 font-read text-[1.02rem] text-slate">{step.help}</p>}
 
-      <div className="mb-12">
-        <p className="text-xs font-medium text-moss uppercase mb-3" style={{ letterSpacing: "0.22em" }}>
-          Going inward
-        </p>
-        <h1 className="font-serif-display text-3xl sm:text-4xl font-bold text-bark mt-2 mb-5">
-          Now tell me about your inner world.
-        </h1>
-        <p className="text-bark-light text-lg sm:text-xl font-serif-reading leading-relaxed">
-          Answer only what feels honest. The report becomes more precise with each answer — but it will be good no matter what you share.
-        </p>
+      <div className="mt-7">
+        {step.kind === "single" && (
+          <fieldset>
+            <legend className="sr-only">{step.prompt}</legend>
+            <div className="flex flex-col gap-2.5">
+              {step.options!.map((opt, i) => (
+                <Choice key={opt} keyHint={i + 1} label={opt} selected={value === opt} onClick={() => onChoose(opt)} />
+              ))}
+            </div>
+          </fieldset>
+        )}
+
+        {step.kind === "multi" && (
+          <fieldset>
+            <legend className="sr-only">{step.prompt}</legend>
+            <div className="flex flex-col gap-2.5">
+              {step.options!.map((opt) => {
+                const on = selected.includes(opt);
+                return (
+                  <Choice
+                    key={opt}
+                    label={opt}
+                    multi
+                    selected={on}
+                    onClick={() =>
+                      onChange((on ? selected.filter((s) => s !== opt) : [...selected, opt]).join("|"))
+                    }
+                  />
+                );
+              })}
+            </div>
+          </fieldset>
+        )}
+
+        {(step.kind === "text" || step.kind === "longtext") && (
+          <div>
+            <label htmlFor={`intake-${step.key}`} className="sr-only">
+              {step.prompt}
+            </label>
+            {step.kind === "text" ? (
+              <input
+                ref={inputRef}
+                id={`intake-${step.key}`}
+                type="text"
+                value={value}
+                maxLength={step.maxLength}
+                placeholder={step.placeholder}
+                onChange={(e) => onChange(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && canContinue && onNext()}
+                className="w-full rounded-[14px] border border-line bg-snow/80 px-4 py-3.5 font-read text-lg text-ink outline-none transition-colors placeholder:text-stone/70 focus:border-pine focus:bg-snow"
+              />
+            ) : (
+              <textarea
+                ref={inputRef}
+                id={`intake-${step.key}`}
+                value={value}
+                rows={3}
+                maxLength={step.maxLength}
+                placeholder={step.placeholder}
+                onChange={(e) => onChange(e.target.value)}
+                className="w-full resize-none rounded-[14px] border border-line bg-snow/80 px-4 py-3.5 font-read text-lg leading-relaxed text-ink outline-none transition-colors placeholder:text-stone/70 focus:border-pine focus:bg-snow"
+              />
+            )}
+            {step.maxLength && value.length > step.maxLength * 0.7 && (
+              <p className="mt-1.5 text-right font-sign text-xs text-stone">
+                {value.length} / {step.maxLength}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
-      <div className="flex flex-col gap-10">
-        {/* Hardest thing */}
-        <div>
-          <p className="text-sm font-medium text-bark mb-3">
-            What&rsquo;s the hardest thing you&rsquo;re navigating right now?
-          </p>
-          <input
-            type="text"
-            maxLength={150}
-            value={context.hardestThing}
-            onChange={(e) => onChange({ ...context, hardestThing: e.target.value })}
-            placeholder="A career transition, a relationship, a loss, a decision..."
-            className="w-full bg-transparent border-0 border-b border-ash px-0 py-2.5 text-base text-bark placeholder:text-moss focus:outline-none focus:border-forest transition-colors font-serif-reading"
-          />
-        </div>
+      <CardFooter onBack={onBack} hint={step.kind === "single" ? "keys" : undefined}>
+        {step.kind !== "single" ? (
+          <div className="flex items-center gap-2">
+            {!step.required && !value && (
+              <button onClick={onNext} className="btn btn-quiet btn-sm">
+                Skip
+              </button>
+            )}
+            <button onClick={onNext} disabled={!canContinue} className="btn btn-dark btn-sm">
+              Continue
+              <ArrowRight size={17} aria-hidden="true" />
+            </button>
+          </div>
+        ) : !step.required ? (
+          <button onClick={onNext} className="btn btn-quiet btn-sm">
+            {value ? "Continue" : "Skip"}
+          </button>
+        ) : null}
+      </CardFooter>
+    </div>
+  );
+}
 
-        {/* Social perception */}
-        <div>
-          <p className="text-sm font-medium text-bark mb-3">
-            How do the people closest to you describe you?
-          </p>
-          <input
-            type="text"
-            maxLength={150}
-            value={context.socialPerception}
-            onChange={(e) => onChange({ ...context, socialPerception: e.target.value })}
-            placeholder="They say I'm..."
-            className="w-full bg-transparent border-0 border-b border-ash px-0 py-2.5 text-base text-bark placeholder:text-moss focus:outline-none focus:border-forest transition-colors font-serif-reading"
-          />
-        </div>
+// ─── Chapter intro ────────────────────────────────────────────────────────────
 
-        {/* Too much */}
-        <div>
-          <p className="text-sm font-medium text-bark mb-3">
-            What&rsquo;s something about you that you&rsquo;ve learned to love, even if others haven&rsquo;t always understood it?
-          </p>
-          <input
-            type="text"
-            maxLength={150}
-            value={context.tooMuch}
-            onChange={(e) => onChange({ ...context, tooMuch: e.target.value })}
-            placeholder="My intensity, my need to help, my attention to detail..."
-            className="w-full bg-transparent border-0 border-b border-ash px-0 py-2.5 text-base text-bark placeholder:text-moss focus:outline-none focus:border-forest transition-colors font-serif-reading"
-          />
-        </div>
-
-        {/* Life stage */}
-        <IntakeRadioGroup
-          label="Where are you right now in life?"
-          options={[
-            "Building (new role, new relationship, new chapter)",
-            "Navigating (transition, uncertainty, change)",
-            "Rebuilding (after loss, divorce, or major shift)",
-            "Deepening (established, seeking more meaning)",
-          ]}
-          value={context.lifeStage}
-          onChange={(v) => onChange({ ...context, lifeStage: v })}
-          optional
-        />
-
-        {/* Worst self — required */}
-        <IntakeRadioGroup
-          label="When life gets hard, you tend to:"
-          options={[
-            "Withdraw and go quiet",
-            "Push harder and control more",
-            "Seek reassurance from others",
-            "Distract yourself and stay busy",
-            "Intellectualize and analyze everything",
-          ]}
-          value={context.worstSelf}
-          onChange={(v) => onChange({ ...context, worstSelf: v })}
-          required
-        />
-      </div>
-
-      <div className="mt-12 flex flex-col items-center gap-5 text-center">
-        <p className="text-sm text-moss italic font-serif-reading leading-relaxed">
-          Everything here is optional. Your answers never leave your browser.
+function ChapterIntro({ chapterIndex, onStart, onBack }: { chapterIndex: number; onStart: () => void; onBack: () => void }) {
+  const c = CHAPTERS[chapterIndex];
+  const count = SECTIONS[c.sectionIndex!].questions.length;
+  return (
+    <div>
+      <div className="flex items-center gap-4">
+        <span className="grid h-14 w-14 place-items-center rounded-2xl bg-pine text-gold-hi animate-pop">
+          <ChapterIcon id={c.id} size={26} strokeWidth={1.9} />
+        </span>
+        <p className="type-kicker">
+          Chapter {chapterIndex} of {CHAPTERS.length - 1}
         </p>
-        <button
-          onClick={onContinue}
-          disabled={!canContinue}
-          className={`w-full sm:w-auto px-10 py-3.5 rounded-full font-medium text-base tracking-wide transition-colors duration-300 ${
-            canContinue
-              ? "border border-forest text-forest hover:bg-forest/10 cursor-pointer"
-              : "border border-ash text-moss cursor-not-allowed"
-          }`}
-        >
-          Continue to Assessment →
+      </div>
+      <h1 className="type-h1 mt-6 text-ink">{c.name}</h1>
+      <p className="mt-2 font-sign text-lg font-medium text-pine-2">{c.topic}</p>
+      <p className="type-lede mt-5 text-slate">{c.intro}</p>
+
+      <ul className="mt-6 flex flex-wrap gap-x-6 gap-y-2 font-sign text-[0.95rem] text-stone">
+        <li className="flex items-center gap-1.5">
+          <Clock size={15} aria-hidden="true" />
+          About {MINUTES[c.id]} minutes
+        </li>
+        <li className="flex items-center gap-1.5">
+          <Check size={15} aria-hidden="true" />
+          {count} statements
+        </li>
+        <li className="flex items-center gap-1.5">
+          <Keyboard size={15} aria-hidden="true" />
+          Tap or press 1–5
+        </li>
+      </ul>
+
+      <CardFooter onBack={onBack} note={FRAMEWORK[c.id]}>
+        <button onClick={onStart} className="btn btn-primary" autoFocus>
+          {chapterIndex === 1 ? "Begin the climb" : "Start this chapter"}
+          <ArrowRight size={18} strokeWidth={2.25} aria-hidden="true" />
         </button>
+      </CardFooter>
+    </div>
+  );
+}
+
+// ─── Question ─────────────────────────────────────────────────────────────────
+
+function QuestionCard({
+  text,
+  ask,
+  labels,
+  number,
+  total,
+  topic,
+  value,
+  onAnswer,
+  onBack,
+}: {
+  text: string;
+  ask: string;
+  labels: string[];
+  number: number;
+  total: number;
+  topic: string;
+  value: number | undefined;
+  onAnswer: (v: number) => void;
+  onBack: () => void;
+}) {
+  return (
+    <div>
+      <CardMeta left={topic} right={`${number} of ${total}`} />
+      <p className="mt-6 font-read text-[clamp(1.55rem,3.6vw,2.15rem)] font-medium leading-[1.25] text-ink">{text}</p>
+      <fieldset className="mt-7">
+        <legend className="mb-3 font-sign text-[0.95rem] text-stone">{ask}</legend>
+        <div className="flex flex-col gap-2">
+          {labels.map((label, i) => (
+            <Choice key={label} keyHint={i + 1} label={label} selected={value === i + 1} onClick={() => onAnswer(i + 1)} scale={i} />
+          ))}
+        </div>
+      </fieldset>
+      <CardFooter onBack={onBack} hint="keys" />
+    </div>
+  );
+}
+
+// ─── Trail marker (end of chapter) ────────────────────────────────────────────
+
+function MarkerCard({
+  chapterIndex,
+  answers,
+  onContinue,
+  onBack,
+}: {
+  chapterIndex: number;
+  answers: Record<number, number>;
+  onContinue: () => void;
+  onBack: () => void;
+}) {
+  const c = CHAPTERS[chapterIndex];
+  const marker = trailMarkerFor(c.id, calculateScores(answers));
+  const last = chapterIndex === CHAPTERS.length - 1;
+  const remaining = CHAPTERS.length - 1 - chapterIndex;
+
+  return (
+    <div className="text-center sm:text-left">
+      <div className="flex flex-col items-center gap-4 sm:flex-row">
+        <span className="grid h-14 w-14 place-items-center rounded-full bg-gold text-ink animate-pop">
+          <Flag size={24} strokeWidth={2.1} aria-hidden="true" />
+        </span>
+        <p className="type-kicker">{last ? "Summit reached" : `${c.name}: complete`}</p>
+      </div>
+      {marker && (
+        <>
+          <h1 className="type-h2 mt-6 text-ink">{marker.headline}</h1>
+          <p className="type-lede mt-4 text-slate">{marker.detail}</p>
+        </>
+      )}
+      <p className="mt-6 font-sign text-[0.95rem] text-stone">
+        {last
+          ? "That's every question. Next, Sonder writes your first three insights."
+          : `${remaining} chapter${remaining === 1 ? "" : "s"} to go. Your full report goes much deeper than this.`}
+      </p>
+      <CardFooter onBack={onBack}>
+        <button onClick={onContinue} className="btn btn-primary" autoFocus>
+          {last ? "See your first insights" : "Keep climbing"}
+          <ArrowRight size={18} strokeWidth={2.25} aria-hidden="true" />
+        </button>
+      </CardFooter>
+    </div>
+  );
+}
+
+// ─── Shared bits ──────────────────────────────────────────────────────────────
+
+function CardMeta({ left, right }: { left: React.ReactNode; right: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 font-sign text-[0.95rem]">
+      <span className="flex items-center gap-1.5 font-medium text-pine-2">{left}</span>
+      <span className="tabular-nums text-stone">{right}</span>
+    </div>
+  );
+}
+
+function CardFooter({
+  onBack,
+  children,
+  hint,
+  note,
+}: {
+  onBack: () => void;
+  children?: React.ReactNode;
+  hint?: "keys";
+  note?: string;
+}) {
+  return (
+    <div className="mt-8 border-t border-line/70 pt-5">
+      {note && <p className="mb-4 font-sign text-sm text-stone">{note}</p>}
+      <div className="flex flex-wrap-reverse items-center justify-between gap-3">
+        <button onClick={onBack} className="btn btn-quiet btn-sm -ml-1">
+          <ArrowLeft size={17} aria-hidden="true" />
+          Back
+        </button>
+        {hint === "keys" && (
+          <span className="hidden items-center gap-1.5 font-sign text-sm text-stone sm:flex">
+            <Keyboard size={15} aria-hidden="true" />
+            Keys 1–5 work too
+          </span>
+        )}
+        {children}
       </div>
     </div>
   );
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function joinClarityGoals(goals: string[]): string {
-  const normalized = goals.map((g) => g.replace(/^My /, "").toLowerCase());
-  if (normalized.length === 1) return normalized[0];
-  if (normalized.length === 2) return `${normalized[0]} and ${normalized[1]}`;
-  return `${normalized.slice(0, -1).join(", ")}, and ${normalized[normalized.length - 1]}`;
-}
-
-// ─── Intake Chip ──────────────────────────────────────────────────────────────
-
-function IntakeChip({
+function Choice({
   label,
   selected,
   onClick,
+  keyHint,
+  multi,
+  scale,
 }: {
   label: string;
   selected: boolean;
   onClick: () => void;
+  keyHint?: number;
+  multi?: boolean;
+  scale?: number;
 }) {
-  const [hovered, setHovered] = useState(false);
   return (
     <button
       type="button"
       onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className="px-5 py-2 rounded-full text-sm select-none font-serif-reading"
-      style={{
-        border: `1px solid ${selected ? "#5A7250" : hovered ? "#8A9383" : "#E8E3DC"}`,
-        background: selected
-          ? "rgba(90,114,80,0.1)"
-          : hovered
-          ? "rgba(232,227,220,0.4)"
-          : "transparent",
-        color: selected ? "#5A7250" : "#5C524B",
-        transition: "border-color 300ms ease, background 300ms ease, color 300ms ease",
-        cursor: "pointer",
-      }}
+      aria-pressed={selected}
+      className={`group flex w-full items-center gap-3.5 rounded-[14px] border px-3.5 py-3 text-left transition-all duration-200 ${
+        selected
+          ? "border-pine bg-pine text-snow shadow-[0_10px_24px_-14px_rgb(33_63_53/0.9)]"
+          : "border-line bg-snow/75 text-ink hover:-translate-y-px hover:border-pine/50 hover:bg-snow hover:shadow-[0_8px_20px_-14px_rgb(33_63_53/0.6)]"
+      }`}
     >
-      {label}
+      {multi ? (
+        <span
+          className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg border-[1.5px] transition-colors ${
+            selected ? "border-gold bg-gold text-ink" : "border-line bg-snow text-transparent group-hover:border-pine/50"
+          }`}
+        >
+          <Check size={16} strokeWidth={3} aria-hidden="true" />
+        </span>
+      ) : keyHint ? (
+        <span
+          className={`grid h-7 w-7 shrink-0 place-items-center rounded-lg font-sign text-sm font-semibold tabular-nums transition-colors ${
+            selected ? "bg-gold text-ink" : "bg-mist text-slate group-hover:bg-pine/10 group-hover:text-pine"
+          }`}
+          aria-hidden="true"
+        >
+          {keyHint}
+        </span>
+      ) : null}
+      <span className="flex-1 font-sign text-[1.05rem] font-medium leading-snug">{label}</span>
+      {scale !== undefined && <ScaleDots level={scale} on={selected} />}
     </button>
   );
 }
 
-// ─── Intake Radio Group ───────────────────────────────────────────────────────
-
-function IntakeRadioGroup({
-  label,
-  options,
-  value,
-  onChange,
-  optional: _optional,
-  required,
-}: {
-  label: string;
-  options: string[];
-  value: string;
-  onChange: (v: string) => void;
-  optional?: boolean;
-  required?: boolean;
-}) {
+/** Five small dots that fill left to right, so the scale reads at a glance. */
+function ScaleDots({ level, on }: { level: number; on: boolean }) {
   return (
-    <div>
-      <p className="text-sm font-medium text-bark mb-3">
-        {label}{" "}
-        {required && <span className="font-normal" style={{ color: "#A0524D" }}> *</span>}
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {options.map((opt) => (
-          <IntakeChip
-            key={opt}
-            label={opt}
-            selected={value === opt}
-            onClick={() => onChange(opt)}
-          />
-        ))}
-      </div>
-    </div>
+    <span className="hidden shrink-0 items-center gap-1 sm:flex" aria-hidden="true">
+      {[0, 1, 2, 3, 4].map((i) => (
+        <span
+          key={i}
+          className={`h-1.5 w-1.5 rounded-full ${i <= level ? (on ? "bg-gold" : "bg-pine/45") : on ? "bg-snow/25" : "bg-line"}`}
+        />
+      ))}
+    </span>
   );
 }
 
-// ─── Likert Circle Button ─────────────────────────────────────────────────────
+// ─── Development only ─────────────────────────────────────────────────────────
 
-function LikertCircle({
-  value,
-  isSelected,
-  ariaLabel,
-  onClick,
-}: {
-  value: number;
-  isSelected: boolean;
-  ariaLabel: string;
-  onClick: () => void;
-}) {
-  const [hovered, setHovered] = useState(false);
-
+function DevFill({ onFill }: { onFill: (p: Progress) => void }) {
   return (
     <button
-      type="button"
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      aria-pressed={isSelected}
-      aria-label={ariaLabel}
-      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 select-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-      style={{
-        border: `1px solid ${isSelected ? "#5A7250" : hovered ? "#8A9383" : "#E8E3DC"}`,
-        backgroundColor: isSelected
-          ? "#5A7250"
-          : hovered
-          ? "rgba(232,227,220,0.5)"
-          : "transparent",
-        transition: "background-color 300ms ease, border-color 300ms ease",
-        cursor: "pointer",
-        outlineColor: "#5A7250",
+      onClick={() => {
+        const answers: Record<number, number> = {};
+        SECTIONS.forEach((s) => s.questions.forEach((q) => (answers[q.id] = 1 + ((q.id * 7) % 5))));
+        onFill({
+          ...START,
+          answers,
+          context: {
+            ageRange: "35–44",
+            relationshipStatus: "Married",
+            hasChildren: "Yes",
+            workField: "Sales",
+            hobby: "Twenty years of competitive pool",
+            clarityGoal: "My career direction|Who I am as a person",
+            lifeStage: "Navigating (transition, uncertainty, change)",
+            hardestThing: "Starting a new role while staying present for my family",
+            socialPerception: "Always on, always helping",
+            tooMuch: "My need to see potential in everyone",
+            worstSelf: "Intellectualize and analyze everything",
+            ninetyDayHope: "Feel steady and present at home",
+          },
+        });
       }}
+      className="fixed bottom-3 left-3 z-50 rounded-lg bg-ink/80 px-3 py-2 font-sign text-xs text-snow"
     >
-      <span
-        style={{
-          fontFamily: isSelected
-            ? "var(--font-playfair), Georgia, serif"
-            : "var(--font-eb-garamond), Georgia, serif",
-          fontSize: "13px",
-          fontWeight: isSelected ? 600 : 400,
-          lineHeight: 1,
-          color: isSelected ? "#F5F0E8" : "#5C524B",
-          userSelect: "none",
-        }}
-      >
-        {value}
-      </span>
+      Dev: fill and finish
     </button>
-  );
-}
-
-// ─── Question Item ────────────────────────────────────────────────────────────
-
-type QuestionItemProps = {
-  questionId: number;
-  text: string;
-  answer: number | undefined;
-  scaleLow: string;
-  scaleHigh: string;
-  onChange: (value: number) => void;
-  dimmed?: boolean;
-};
-
-function QuestionItem({
-  questionId: _questionId,
-  text,
-  answer,
-  scaleLow,
-  scaleHigh,
-  onChange,
-  dimmed,
-}: QuestionItemProps) {
-  const isAnswered = answer !== undefined;
-
-  return (
-    <div
-      className="py-8 transition-opacity duration-300"
-      style={{ opacity: dimmed ? 0.38 : 1 }}
-    >
-      <p
-        className={`text-bark leading-relaxed mb-6 text-[1.0625rem] sm:text-lg font-serif-reading transition-all duration-200 ${
-          isAnswered ? "font-medium" : "font-normal"
-        }`}
-      >
-        {text}
-      </p>
-
-      <div
-        className="flex items-center justify-between gap-2 sm:gap-3"
-        role="group"
-        aria-label={`Answer: ${text}`}
-      >
-        {/* Disagree label */}
-        <span
-          className="text-[10px] sm:text-xs text-moss whitespace-nowrap leading-tight uppercase"
-          style={{ letterSpacing: "0.1em" }}
-        >
-          {scaleLow.split(" ")[0] || "Disagree"}
-        </span>
-
-        {/* Circle buttons */}
-        <div className="flex items-center gap-1.5 sm:gap-3">
-          {([1, 2, 3, 4, 5] as const).map((val) => (
-            <LikertCircle
-              key={val}
-              value={val}
-              isSelected={answer === val}
-              ariaLabel={`${val} — ${
-                val === 1 ? scaleLow : val === 5 ? scaleHigh : String(val)
-              }`}
-              onClick={() => onChange(val)}
-            />
-          ))}
-        </div>
-
-        {/* Agree label */}
-        <span
-          className="text-[10px] sm:text-xs text-moss whitespace-nowrap leading-tight uppercase"
-          style={{ letterSpacing: "0.1em" }}
-        >
-          {scaleHigh.split(" ")[0] || "Agree"}
-        </span>
-      </div>
-    </div>
   );
 }

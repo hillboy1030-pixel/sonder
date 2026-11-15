@@ -1,40 +1,29 @@
-import type { Metadata } from "next";
-import { EB_Garamond, Inter, Playfair_Display } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import "@fontsource-variable/national-park";
+import "@fontsource-variable/literata";
+import "@fontsource-variable/literata/wght-italic.css";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
-
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
-  subsets: ["latin"],
-});
-
-const ebGaramond = EB_Garamond({
-  variable: "--font-eb-garamond",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-});
-
 export const metadata: Metadata = {
-  title: "Sonder — Know Yourself Fully",
+  title: "Sonder — Come inward",
   description:
-    "A high-fidelity personality analysis powered by modern psychology and AI. Discover your Big Five traits, career type, attachment style, and core strengths.",
+    "A guided climb through research-backed personality questions and what you're working through right now. At the top: a written portrait of how you think, work, love, and grow.",
+  openGraph: {
+    title: "Sonder — Come inward",
+    description:
+      "A guided climb through research-backed questions. At the top: a written portrait of how you think, work, love, and grow.",
+    type: "website",
+  },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export const viewport: Viewport = {
+  themeColor: "#213F35",
+};
+
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang="en"
-      className={`${inter.variable} ${playfair.variable} ${ebGaramond.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="en">
+      <body className="min-h-screen">{children}</body>
     </html>
   );
 }

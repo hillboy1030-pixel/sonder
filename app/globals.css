@@ -1,148 +1,279 @@
 @import "tailwindcss";
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   Sonder — mountain trail design tokens
+   Palette: dawn on a granite range. Cool mist backgrounds, deep pine for weight,
+   one sunrise-gold accent reserved for the next step on the trail.
+   Type: National Park (routed trail-sign letterforms) for headings and UI,
+   Literata for anything meant to be read slowly.
+   ───────────────────────────────────────────────────────────────────────────── */
+
 @theme {
-  /* ── Backgrounds ── */
-  --color-cream: #F9F7F4;
-  --color-parchment: #F5F0E8;
-  --color-parchment-dark: #EDE8DF;
+  --color-mist: #E7ECE9;
+  --color-mist-deep: #D8E0DC;
+  --color-snow: #F6F8F7;
+  --color-ink: #1C2521;
+  --color-slate: #4B5B56;
+  --color-stone: #7B8883;
+  --color-line: #C9D3CE;
+  --color-pine: #213F35;
+  --color-pine-2: #2E5546;
+  --color-lichen: #8DA393;
+  --color-ridge: #3B4D5B;
+  --color-dusk: #6E7F94;
+  --color-gold: #E2A23B;
+  --color-gold-hi: #EDB75C;
+  --color-gold-lo: #C88A26;
+  --color-ember: #A6503A;
 
-  /* ── Text ── */
-  --color-bark: #3C3530;
-  --color-bark-light: #5C524B;
-  --color-moss: #8A9383;
+  --font-sign: "National Park Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-read: "Literata Variable", Georgia, serif;
 
-  /* ── Accents ── */
-  --color-forest: #5A7250;
-  --color-forest-light: #527554;
-  --color-sage: #7A9E7E;
-  --color-ember: #A0524D;
+  --radius-panel: 22px;
+  --radius-control: 14px;
 
-  /* ── Borders / Dividers ── */
-  --color-ash: #E8E3DC;
-  --color-stone: #8A8278;
-  --color-stone-light: #B8B2A8;
-
-  /* ── Typography ── */
-  --font-serif: var(--font-playfair);
-  --font-serif-display: var(--font-playfair);
-  --font-serif-reading: var(--font-eb-garamond);
-  --font-sans: var(--font-inter);
-
-  --animate-fade-up: fadeUp 0.75s ease-out forwards;
+  --ease-trail: cubic-bezier(0.22, 0.8, 0.24, 1);
 }
 
-@keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(22px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+@layer base {
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
-
 
 body {
-  background-color: var(--color-parchment);
-  color: var(--color-bark);
-  font-family: var(--font-inter), system-ui, sans-serif;
+  background: var(--color-mist);
+  color: var(--color-ink);
+  font-family: var(--font-read);
+  font-size: 1.0625rem;
   line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* Zero-height print break trigger — invisible on screen */
-.print-section-break {
-  display: none;
+h1, h2, h3, h4, button, label, input, select, textarea, nav {
+  font-family: var(--font-sign);
 }
 
-/* ─── Print stylesheet ───────────────────────────────────────────────────── */
+::selection {
+  background: color-mix(in srgb, var(--color-gold) 45%, transparent);
+}
+
+:focus-visible {
+  outline: 2.5px solid var(--color-gold);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+}
+
+/* ── Type scale ─────────────────────────────────────────────────────────── */
+
+@utility type-display {
+  font-family: var(--font-sign);
+  font-weight: 700;
+  font-size: clamp(3.25rem, 9vw, 7rem);
+  line-height: 0.92;
+  letter-spacing: -0.015em;
+}
+@utility type-h1 {
+  font-family: var(--font-sign);
+  font-weight: 700;
+  font-size: clamp(2.25rem, 5vw, 3.5rem);
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+}
+@utility type-h2 {
+  font-family: var(--font-sign);
+  font-weight: 650;
+  font-size: clamp(1.75rem, 3.6vw, 2.5rem);
+  line-height: 1.08;
+}
+@utility type-h3 {
+  font-family: var(--font-sign);
+  font-weight: 620;
+  font-size: 1.3rem;
+  line-height: 1.2;
+}
+@utility type-kicker {
+  font-family: var(--font-sign);
+  font-weight: 560;
+  font-size: 0.9rem;
+  line-height: 1.3;
+  color: var(--color-pine-2);
+}
+@utility type-lede {
+  font-family: var(--font-read);
+  font-size: clamp(1.1rem, 1.6vw, 1.3rem);
+  line-height: 1.6;
+}
+@utility type-meta {
+  font-family: var(--font-sign);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+/* ── Frosted glass ──────────────────────────────────────────────────────── */
+
+@utility glass {
+  background: color-mix(in srgb, var(--color-snow) 66%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+  border: 1px solid rgb(255 255 255 / 0.6);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.7),
+    0 24px 48px -28px rgb(22 46 38 / 0.45);
+}
+@utility glass-dark {
+  background: rgb(20 36 31 / 0.42);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgb(255 255 255 / 0.16);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 24px 48px -28px rgb(0 0 0 / 0.5);
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+
+@utility btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  font-family: var(--font-sign);
+  font-weight: 620;
+  font-size: 1.0625rem;
+  line-height: 1;
+  letter-spacing: 0.005em;
+  padding: 1rem 1.6rem;
+  border-radius: var(--radius-control);
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  transition:
+    background-color 180ms var(--ease-trail),
+    border-color 180ms var(--ease-trail),
+    color 180ms var(--ease-trail),
+    box-shadow 220ms var(--ease-trail),
+    transform 220ms var(--ease-trail);
+  &:disabled { cursor: not-allowed; }
+  & svg { transition: transform 220ms var(--ease-trail); flex-shrink: 0; }
+}
+
+/* Primary: the next step on the trail. One per view. */
+@utility btn-primary {
+  background: var(--color-gold);
+  color: var(--color-ink);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.35) inset, 0 10px 24px -12px rgb(200 138 38 / 0.8);
+  &:hover:not(:disabled) {
+    background: var(--color-gold-hi);
+    transform: translateY(-2px);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 0.4) inset, 0 16px 30px -12px rgb(200 138 38 / 0.9);
+  }
+  &:hover:not(:disabled) svg { transform: translateX(3px); }
+  &:active:not(:disabled) { background: var(--color-gold-lo); transform: translateY(0); }
+  &:disabled { background: var(--color-mist-deep); color: var(--color-stone); box-shadow: none; }
+}
+
+/* Secondary on light backgrounds: pine outline that fills on hover. */
+@utility btn-secondary {
+  background: transparent;
+  color: var(--color-pine);
+  border-color: color-mix(in srgb, var(--color-pine) 55%, transparent);
+  &:hover:not(:disabled) {
+    background: var(--color-pine);
+    border-color: var(--color-pine);
+    color: var(--color-snow);
+    transform: translateY(-1px);
+  }
+  &:disabled { color: var(--color-stone); border-color: var(--color-line); }
+}
+
+/* Secondary on photos/dark: frosted glass. */
+@utility btn-glass {
+  background: rgb(255 255 255 / 0.14);
+  color: var(--color-snow);
+  border-color: rgb(255 255 255 / 0.45);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  &:hover:not(:disabled) {
+    background: rgb(255 255 255 / 0.92);
+    color: var(--color-pine);
+    border-color: rgb(255 255 255 / 0.92);
+    transform: translateY(-1px);
+  }
+}
+
+/* Solid pine, for strong actions on light surfaces that aren't the main step. */
+@utility btn-dark {
+  background: var(--color-pine);
+  color: var(--color-snow);
+  &:hover:not(:disabled) { background: var(--color-pine-2); transform: translateY(-1px); }
+}
+
+@utility btn-quiet {
+  padding: 0.6rem 0.4rem;
+  color: var(--color-slate);
+  font-weight: 560;
+  &:hover:not(:disabled) { color: var(--color-ink); }
+  &:hover:not(:disabled) svg { transform: translateX(-3px); }
+}
+
+@utility btn-sm {
+  font-size: 0.95rem;
+  padding: 0.7rem 1.1rem;
+  border-radius: 12px;
+}
+
+/* ── Motion ─────────────────────────────────────────────────────────────── */
+
+@keyframes trail-draw {
+  from { stroke-dashoffset: var(--trail-length, 2400); }
+  to   { stroke-dashoffset: 0; }
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes breathe {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.06); }
+}
+@keyframes pop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  70%  { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+@utility animate-rise { animation: rise 520ms var(--ease-trail) both; }
+@utility animate-fade { animation: fade 600ms ease-out both; }
+@utility animate-breathe { animation: breathe 3.2s ease-in-out infinite; }
+@utility animate-pop { animation: pop 420ms var(--ease-trail) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Report reading + print ─────────────────────────────────────────────── */
+
+.prose-report p { margin: 0 0 1.1em; }
+.prose-report strong { color: var(--color-ink); font-weight: 650; }
+
+details > summary { list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
 
 @media print {
-  @page {
-    size: auto;
-    margin: 0.75in;
-  }
-
-  /* Hide all screen-only UI */
-  .no-print {
-    display: none !important;
-  }
-
-  /* Full-page white background */
-  html,
-  body {
-    background: white !important;
-    color: black !important;
-  }
-
-  /* Remove max-width constraint so content fills the page */
-  .print-main {
-    max-width: 100% !important;
-    width: 100% !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-
-  /* Report title */
-  .print-report-title {
-    font-family: var(--font-playfair), Georgia, serif !important;
-    font-size: 28pt !important;
-    color: black !important;
-    margin-bottom: 4pt !important;
-  }
-
-  /* Report date */
-  .print-report-date {
-    font-size: 10pt !important;
-    color: #555 !important;
-    margin-bottom: 32pt !important;
-  }
-
-  /* Section page break — zero padding/margin prevents blank-page artifact */
-  .print-section-break {
-    break-before: page !important;
-    page-break-before: always !important;
-    padding-top: 0 !important;
-    margin-top: 0 !important;
-  }
-
-  /* Keep each section's content together — avoid splitting within a section */
-  .print-section-content {
-    page-break-inside: avoid;
-    break-inside: avoid;
-  }
-
-  /* Section number (muted, smaller) */
-  .print-section-number {
-    font-family: var(--font-playfair), Georgia, serif !important;
-    font-size: 22pt !important;
-    color: #bbb !important;
-    line-height: 1 !important;
-    margin-bottom: 4pt !important;
-  }
-
-  /* Section title */
-  .print-section-title {
-    font-family: var(--font-playfair), Georgia, serif !important;
-    font-size: 18pt !important;
-    color: black !important;
-    margin-bottom: 14pt !important;
-  }
-
-  /* Body paragraphs */
-  .print-para {
-    font-size: 11pt !important;
-    line-height: 1.7 !important;
-    color: black !important;
-    margin-bottom: 9pt !important;
-  }
-
-  .print-para strong {
-    color: black !important;
-  }
-
-  /* Hide screen dividers between sections */
-  .print-divider {
-    display: none !important;
-  }
+  @page { size: auto; margin: 0.75in; }
+  .no-print { display: none !important; }
+  html, body { background: white !important; color: black !important; }
+  .print-break { break-before: page; }
 }
