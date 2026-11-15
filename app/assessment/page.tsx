@@ -7,7 +7,7 @@ import {
   ArrowRight,
   Check,
   Clock,
-  Flag,
+  Share2,
   Keyboard,
   RotateCcw,
   ShieldCheck,
@@ -24,6 +24,11 @@ import { TrailProgress } from "@/components/TrailProgress";
 import { ChapterIcon } from "@/components/ChapterIcon";
 import { SupportNote } from "@/components/SupportNote";
 import { GuideLine } from "@/components/Guide";
+import { Ember, EmberAvatar, type EmberMood } from "@/components/Ember";
+import { Cairn } from "@/components/Cairn";
+import { cairnFor, STONE_CHAPTERS } from "@/lib/cairn";
+import { reactTo, newReactionState, type Reaction } from "@/lib/reactions";
+import { stonePath } from "@/lib/cairn";
 import { GUIDE } from "@/lib/guide";
 import { mentionsCrisis } from "@/lib/safety";
 
@@ -67,6 +72,10 @@ export default function AssessmentPage() {
   const saved = !dismissed && stored && stored.phase !== "welcome" ? stored : null;
   const [pending, setPending] = useState<number | null>(null);
   const advancing = useRef(false);
+  const shownAt = useRef(0);
+  const reactionState = useRef(newReactionState());
+  const [reaction, setReaction] = useState<(Reaction & { key: number }) | null>(null);
+  const reactionTimer = useRef<number | undefined>(undefined);
 
   // Save after every step so a closed tab doesn't lose the climb.
   useEffect(() => {
@@ -76,6 +85,10 @@ export default function AssessmentPage() {
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [p.phase, p.intakeIndex, p.chapter]);
+
+  useEffect(() => {
+    shownAt.current = Date.now();
+  }, [p.phase, p.qIndex, p.chapter]);
 
   const chapter = CHAPTERS[p.phase === "intake" || p.phase === "welcome" ? 0 : p.chapter];
   const section = chapter.sectionIndex !== null ? SECTIONS[chapter.sectionIndex] : null;
@@ -91,6 +104,7 @@ export default function AssessmentPage() {
       writeJSON(KEYS.scores, scores);
       writeJSON(KEYS.context, ctx);
       writeJSON(KEYS.markers, markers);
+      writeJSON(KEYS.cairn, cairnFor(scores, 4));
       remove(KEYS.preview, KEYS.report, KEYS.session, KEYS.progress);
       router.push("/preview");
     },
@@ -148,6 +162,14 @@ export default function AssessmentPage() {
       const q = section.questions[p.qIndex];
       advancing.current = true;
       setPending(value);
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.(12);
+      const answers = { ...p.answers, [q.id]: value };
+      const r = reactTo(q, value, Date.now() - shownAt.current, answers, section.questions, reactionState.current);
+      if (r) {
+        window.clearTimeout(reactionTimer.current);
+        setReaction({ ...r, key: Date.now() });
+        reactionTimer.current = window.setTimeout(() => setReaction(null), 3800);
+      }
       setP((cur) => ({ ...cur, answers: { ...cur.answers, [q.id]: value } }));
       window.setTimeout(() => {
         setPending(null);
@@ -155,7 +177,7 @@ export default function AssessmentPage() {
         next();
       }, ADVANCE_DELAY);
     },
-    [p.phase, p.qIndex, section, next]
+    [p.phase, p.qIndex, p.answers, section, next]
   );
 
   const setContext = useCallback((key: string, value: string) => {
@@ -239,7 +261,8 @@ export default function AssessmentPage() {
         </div>
       )}
 
-      <main className="relative z-10 flex flex-1 items-start justify-center px-4 pb-[22vh] pt-6 sm:items-center sm:pb-[26vh] sm:pt-8">
+      <main className="relative z-10 flex flex-1 flex-col items-center justify-start px-4 pb-[22vh] pt-4 sm:justify-center sm:pb-[26vh] sm:pt-6">
+        {p.phase === "question" && <Companion reaction={reaction} />}
         <div key={stepKey} className="glass w-full max-w-2xl rounded-panel p-6 animate-rise sm:p-10">
           {!loaded ? (
             <div className="h-64" />
@@ -278,6 +301,7 @@ export default function AssessmentPage() {
               total={section.questions.length}
               topic={chapter.topic}
               value={pending ?? p.answers[section.questions[p.qIndex].id]}
+              exiting={pending !== null}
               onAnswer={answerQuestion}
               onBack={back}
             />
@@ -339,8 +363,11 @@ function Welcome({
 
   return (
     <div>
-      <h1 className="type-h1 text-ink">Your climb has five stages.</h1>
-      <GuideLine className="mt-6">{GUIDE.welcome}</GuideLine>
+      <div className="flex items-end justify-between gap-4">
+        <h1 className="type-h1 text-ink">Your climb has five stages.</h1>
+        <Ember mood="listening" size={78} className="-mb-1 hidden shrink-0 sm:block" title="Ember, your guide" />
+      </div>
+      <GuideLine className="mt-6" mood="pleased">{GUIDE.welcome}</GuideLine>
       <p className="mt-5 font-sign text-[0.98rem] text-slate">
         About {total} minutes. Your progress saves as you go, so you can stop and come back.
       </p>
@@ -608,6 +635,7 @@ function QuestionCard({
   total,
   topic,
   value,
+  exiting,
   onAnswer,
   onBack,
 }: {
@@ -618,22 +646,163 @@ function QuestionCard({
   total: number;
   topic: string;
   value: number | undefined;
+  exiting: boolean;
   onAnswer: (v: number) => void;
   onBack: () => void;
 }) {
   return (
-    <div>
+    <div className={exiting ? "card-exit" : undefined}>
       <CardMeta left={topic} right={`${number} of ${total}`} />
       <p className="mt-6 font-read text-[clamp(1.55rem,3.6vw,2.15rem)] font-medium leading-[1.25] text-ink">{text}</p>
-      <fieldset className="mt-7">
-        <legend className="mb-3 font-sign text-[0.95rem] text-stone">{ask}</legend>
-        <div className="flex flex-col gap-2">
-          {labels.map((label, i) => (
-            <Choice key={label} keyHint={i + 1} label={label} selected={value === i + 1} onClick={() => onAnswer(i + 1)} scale={i} />
-          ))}
-        </div>
-      </fieldset>
+      <StoneScale ask={ask} labels={labels} value={value} onAnswer={onAnswer} />
       <CardFooter onBack={onBack} hint="keys" />
+    </div>
+  );
+}
+
+// ─── The stone scale: tap a stone, or drag across them ────────────────────────
+
+const STONE_SIZES = [46, 51, 56, 61, 66];
+const STONE_SEEDS = [11, 23, 37, 53, 71];
+
+function StoneScale({
+  ask,
+  labels,
+  value,
+  onAnswer,
+}: {
+  ask: string;
+  labels: string[];
+  value: number | undefined;
+  onAnswer: (v: number) => void;
+}) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+  const [preview, setPreview] = useState<number | null>(null);
+  const shown = preview ?? value ?? null;
+
+  const valueAt = (clientX: number) => {
+    const el = trackRef.current;
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    const t = Math.min(1, Math.max(0, (clientX - r.left) / r.width));
+    return Math.round(t * 4) + 1;
+  };
+  const setP = (v: number | null) => {
+    setPreview((prev) => {
+      if (v !== null && v !== prev && typeof navigator !== "undefined") navigator.vibrate?.(6);
+      return v;
+    });
+  };
+
+  return (
+    <div className="mt-8">
+      <p className="text-center font-sign text-[0.95rem] text-stone">{ask}</p>
+      <p className="mt-1 h-8 text-center font-sign text-[1.25rem] font-semibold text-pine" aria-live="polite">
+        {shown ? labels[shown - 1] : ""}
+      </p>
+      <div
+        ref={trackRef}
+        role="radiogroup"
+        aria-label={ask}
+        className="relative mx-auto mt-2 flex max-w-lg touch-none select-none items-center justify-between py-2"
+        onPointerDown={(e) => {
+          dragging.current = true;
+          (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+          setP(valueAt(e.clientX));
+        }}
+        onPointerMove={(e) => {
+          if (dragging.current) setP(valueAt(e.clientX));
+          else if (e.pointerType === "mouse") setPreview(null);
+        }}
+        onPointerUp={(e) => {
+          if (!dragging.current) return;
+          dragging.current = false;
+          const v = valueAt(e.clientX);
+          setPreview(null);
+          if (v) onAnswer(v);
+        }}
+        onPointerCancel={() => {
+          dragging.current = false;
+          setPreview(null);
+        }}
+      >
+        <span aria-hidden="true" className="absolute inset-x-8 top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-[repeating-linear-gradient(90deg,var(--color-lichen)_0_6px,transparent_6px_11px)] opacity-70" />
+        {labels.map((label, i) => {
+          const v = i + 1;
+          const active = shown === v;
+          const size = STONE_SIZES[i];
+          return (
+            <button
+              key={label}
+              type="button"
+              role="radio"
+              aria-checked={value === v}
+              aria-label={`${v}: ${label}`}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onAnswer(v);
+                }
+              }}
+              onMouseEnter={() => !dragging.current && setPreview(v)}
+              onMouseLeave={() => !dragging.current && setPreview(null)}
+              className="relative z-10 grid h-[72px] w-[60px] place-items-center rounded-full outline-offset-2 sm:w-[72px]"
+            >
+              <svg
+                viewBox="-30 -30 60 60"
+                width={size}
+                height={size}
+                className={`transition-transform duration-200 ${active ? "-translate-y-1 scale-110" : ""}`}
+                aria-hidden="true"
+              >
+                <path d={stonePath(54, 44, STONE_SEEDS[i])} transform="translate(0 4)" fill="#1C2521" opacity="0.12" />
+                <path
+                  d={stonePath(54, 44, STONE_SEEDS[i])}
+                  fill={active ? "var(--color-pine)" : "#C9D3CE"}
+                  stroke={active ? "var(--color-gold)" : "#AEBBB5"}
+                  strokeWidth={active ? 3.5 : 1.5}
+                />
+                <path d={stonePath(40, 18, STONE_SEEDS[i] + 3)} transform="translate(-3 -8)" fill="#FFFFFF" opacity={active ? 0.14 : 0.45} />
+                <text
+                  x="0"
+                  y="6"
+                  textAnchor="middle"
+                  fontSize="17"
+                  fontWeight="600"
+                  fill={active ? "var(--color-gold-hi)" : "var(--color-ink)"}
+                  style={{ fontFamily: "var(--font-sign)" }}
+                >
+                  {v}
+                </text>
+              </svg>
+            </button>
+          );
+        })}
+      </div>
+      <div className="mx-auto mt-1 flex max-w-lg justify-between font-sign text-[0.85rem] text-stone">
+        <span className="max-w-[40%]">{labels[0]}</span>
+        <span className="max-w-[40%] text-right">{labels[4]}</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Ember walking alongside the questions ────────────────────────────────────
+
+function Companion({ reaction }: { reaction: (Reaction & { key: number }) | null }) {
+  return (
+    <div className="mb-3 flex h-[60px] w-full max-w-2xl items-center gap-3 px-1">
+      <EmberAvatar size={52} mood={(reaction?.mood ?? "listening") as EmberMood} />
+      {reaction && (
+        <p
+          key={reaction.key}
+          role="status"
+          className="toast-in relative rounded-2xl rounded-tl-md bg-snow px-4 py-2.5 font-read text-[1.02rem] italic leading-snug text-ink shadow-[0_10px_24px_-14px_rgb(33_63_53/0.6)]"
+        >
+          {reaction.line}
+        </p>
+      )}
     </div>
   );
 }
@@ -652,21 +821,27 @@ function MarkerCard({
   onBack: () => void;
 }) {
   const c = CHAPTERS[chapterIndex];
-  const marker = trailMarkerFor(c.id, calculateScores(answers));
+  const scores = calculateScores(answers);
+  const marker = trailMarkerFor(c.id, scores);
   const last = chapterIndex === CHAPTERS.length - 1;
   const remaining = CHAPTERS.length - 1 - chapterIndex;
+  const stones = cairnFor(scores, chapterIndex);
+  const stone = stones[stones.length - 1];
 
   return (
-    <div className="text-center sm:text-left">
-      <div className="flex flex-col items-center gap-4 sm:flex-row">
-        <span className="grid h-14 w-14 place-items-center rounded-full bg-gold text-ink animate-pop">
-          <Flag size={24} strokeWidth={2.1} aria-hidden="true" />
-        </span>
-        <p className="type-kicker">{last ? "Summit reached" : `${c.name}: complete`}</p>
+    <div>
+      <div className="grid items-end gap-6 sm:grid-cols-[180px_1fr] sm:gap-8">
+        <div className="mx-auto sm:mx-0">
+          <Cairn stones={stones} ghosts={last ? 0 : STONE_CHAPTERS.length - stones.length} complete={last} dropLast size={last ? 170 : 160} />
+        </div>
+        <div className="text-center sm:text-left">
+          <p className="type-kicker">{last ? "Summit reached. Your cairn is complete." : "A stone for your cairn"}</p>
+          {stone && <h1 className="type-h1 mt-2 text-ink">{stone.word}</h1>}
+          {stone && <p className="mt-1 font-sign text-[1.02rem] text-slate">{stone.meaning}</p>}
+        </div>
       </div>
-      {marker && <h1 className="type-h2 mt-6 text-ink">{marker.headline}</h1>}
       {(marker || last) && (
-        <GuideLine className="mt-5 text-left">
+        <GuideLine className="mt-7 text-left" mood={last ? "celebrating" : "pleased"}>
           {marker?.detail}
           {last && (
             <>
@@ -676,11 +851,12 @@ function MarkerCard({
           )}
         </GuideLine>
       )}
-      {!last && (
-        <p className="mt-6 font-sign text-[0.95rem] text-stone">
-          {`${remaining} chapter${remaining === 1 ? "" : "s"} to go. Your full report goes much deeper than this.`}
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+        <p className="font-sign text-[0.95rem] text-stone">
+          {last ? stones.map((s) => s.word).join(" · ") : `${remaining} chapter${remaining === 1 ? "" : "s"} to go.`}
         </p>
-      )}
+        <ShareStoneButton stones={stones} headline={marker?.headline ?? ""} detail={marker?.detail ?? ""} complete={last} />
+      </div>
       <CardFooter onBack={onBack}>
         <button onClick={onContinue} className="btn btn-primary" autoFocus>
           {last ? "See your first insights" : "Keep climbing"}
@@ -688,6 +864,26 @@ function MarkerCard({
         </button>
       </CardFooter>
     </div>
+  );
+}
+
+function ShareStoneButton({ stones, headline, detail, complete }: { stones: ReturnType<typeof cairnFor>; headline: string; detail: string; complete: boolean }) {
+  const [state, setState] = useState<"idle" | "busy" | "done">("idle");
+  return (
+    <button
+      type="button"
+      disabled={state === "busy"}
+      onClick={async () => {
+        setState("busy");
+        const { shareStoryCard } = await import("@/lib/shareImage");
+        const ok = await shareStoryCard({ stones, headline, detail, complete });
+        setState(ok ? "done" : "idle");
+      }}
+      className="btn btn-quiet btn-sm"
+    >
+      {state === "done" ? <Check size={16} aria-hidden="true" /> : <Share2 size={16} aria-hidden="true" />}
+      {state === "done" ? "Saved" : state === "busy" ? "Making card" : complete ? "Share my cairn" : "Share this stone"}
+    </button>
   );
 }
 

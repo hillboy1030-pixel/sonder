@@ -26,7 +26,8 @@ import { WaitlistForm } from "@/components/WaitlistForm";
 import { SupportNote } from "@/components/SupportNote";
 import { contextNeedsCare } from "@/lib/safety";
 import { GUIDE } from "@/lib/guide";
-import { GuideLine, GuideMark } from "@/components/Guide";
+import { GuideLine } from "@/components/Guide";
+import { Ember } from "@/components/Ember";
 import { JournalPageMock } from "@/components/JournalBits";
 import { KEYS, readJSON, writeJSON } from "@/lib/storage";
 import { useStored } from "@/lib/useStored";
@@ -280,9 +281,9 @@ function FullReport({ report }: { report: Report }) {
             ))}
 
             <div className="mt-20 flex flex-col items-center text-center">
-              <GuideMark size={56} />
+              <Ember mood="pleased" size={88} title="Ember, your guide" />
               <p className="mt-4 font-read text-xl italic text-ink">{GUIDE.reportClose}</p>
-              <p className="mt-1 font-sign text-sm font-semibold text-pine-2">Your guide</p>
+              <p className="mt-1 font-sign text-sm font-semibold text-pine-2">Ember, your guide</p>
               <button onClick={download} disabled={downloading} className="no-print btn btn-dark mt-8">
                 {downloading ? <LoaderCircle size={18} className="animate-spin" aria-hidden="true" /> : <Download size={18} aria-hidden="true" />}
                 Download your report
