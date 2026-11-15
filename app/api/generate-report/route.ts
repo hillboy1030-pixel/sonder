@@ -7,6 +7,7 @@ import { contextNeedsCare } from "@/lib/safety";
 import { checkPurchase } from "@/lib/server/payment";
 import { MOCK_REPORT, mockDelay } from "@/lib/server/mockData";
 import { aiErrorResponse } from "@/lib/server/aiErrors";
+import { extractStructured } from "@/lib/server/extract";
 
 // The full report takes 2–3 minutes to write.
 export const maxDuration = 300;
@@ -28,13 +29,14 @@ const REPORT_TOOL: Anthropic.Tool = {
             content: { type: "string" },
           },
           required: ["title", "content"],
+          additionalProperties: false,
         },
-        minItems: 9,
-        maxItems: 9,
       },
     },
     required: ["sections"],
+    additionalProperties: false,
   },
+  strict: true,
 };
 
 export async function POST(request: NextRequest) {
@@ -83,7 +85,8 @@ export async function POST(request: NextRequest) {
         max_tokens: 16000,
         system: REPORT_SYSTEM_PROMPT,
         tools: [REPORT_TOOL],
-        tool_choice: { type: "tool", name: "return_report" },
+        tool_choice: { type: "auto" },
+        thinking: { type: "between_tools" },
         messages: [{ role: "user", content: userContent }],
       });
       message = await stream.finalMessage();
@@ -98,10 +101,7 @@ export async function POST(request: NextRequest) {
       continue;
     }
 
-    const toolUse = message.content.find((b) => b.type === "tool_use");
-    const data = toolUse?.type === "tool_use"
-      ? (toolUse.input as { sections?: { title: string; content: string }[] })
-      : null;
+    const data = extractStructured<{ sections?: { title: string; content: string }[] }>(message, REPORT_TOOL.name);
 
     if (data && Array.isArray(data.sections) && data.sections.length === 9) {
       return Response.json(data);

@@ -38,8 +38,7 @@ Title rules: 2-4 words, reads like a private nickname for a pattern they recogni
 Insight: 2-3 sentences. Tone is a close friend who has studied psychology and is finally saying the thing out loud. Not a therapist, not a life coach.
 The three cards together should make the person feel simultaneously seen, slightly exposed, and certain the full report will change something for them.
 
-Return ONLY a JSON object with this exact structure, no other text:
-{"previewInsights": [{"title": "...", "insight": "..."}, {"title": "...", "insight": "..."}, {"title": "...", "insight": "..."}]}`;
+Respond only by calling the return_preview_insights tool with exactly three cards. Do not write any text outside the tool call.`;
 
 export const REPORT_SYSTEM_PROMPT = `You are Sonder's report engine. Your job is to generate a deeply personal, psychologically accurate self-understanding report based on validated psychometric scores.
 
