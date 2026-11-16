@@ -158,6 +158,7 @@ End Part 9 with this line on its own, as the final words of the letter: You are 
 
 ${CRAFT}
 - Parts 1–8 are prose only, no bullet points. Each is 150–300 words.
+- Every part must tell them something the earlier parts haven't. Name their central pattern fully once, in the part where it fits best; after that, show new sides of it (how it plays out at work, at home, with others, in what they want) instead of restating it. If a sentence would fit in any part, it doesn't belong in this one.
 - End each of Parts 1–8 with one short line worth carrying, on its own line in bold (**like this**): the kind of thing they'd remember on a hard day. In your own words, never a famous quote. In Part 6, the three questions take the place of this line.
 
 Respond only by calling the return_report tool with exactly nine sections, using the titles above. Do not write any text outside the tool call.`;
