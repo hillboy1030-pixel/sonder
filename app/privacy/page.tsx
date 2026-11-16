@@ -37,16 +37,18 @@ export default function PrivacyPage() {
         </p>
       </ProseSection>
 
-      <ProseSection title="The journal waitlist">
+      <ProseSection title="Your journal">
         <p>
-          If you join the journal waitlist, we store your email address with our payment provider,
-          Stripe, tagged as a waitlist sign-up. We use it only to tell you when the journal is
-          available. To be removed, email us and we&rsquo;ll delete it.
+          When you ask for your 90-day journal, your report, scores, answers, what you shared at
+          basecamp, and the name you want on the cover are sent to our server and to Anthropic&rsquo;s
+          Claude API to write and typeset it. The finished files are sent back to your browser and kept
+          there so you can download them again. We don&rsquo;t keep the request or the journal on our
+          servers.
         </p>
       </ProseSection>
 
       <ProseSection title="Service providers">
-        <p>Anthropic writes the reports. Stripe processes payments and holds the waitlist. Vercel hosts the site.</p>
+        <p>Anthropic writes the reports and journals. Stripe processes payments. Vercel hosts the site.</p>
       </ProseSection>
 
       <ProseSection title="Age">

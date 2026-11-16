@@ -4,6 +4,10 @@ export const KEYS = {
   progress: "sonder_progress_v2",
   /** Individual answers (question id → 1–5), kept for the journal's retakes. */
   answers: "sonder_answers",
+  /** The journal PDFs from early access, so they can be downloaded again. */
+  journal: "sonder_journal",
+  /** Shows "skip the questions" for Jesse's own testing (?devtools=1). */
+  devtools: "sonder_devtools",
   scores: "sonder_scores",
   context: "sonder_context",
   markers: "sonder_markers",

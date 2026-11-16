@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { WaitlistForm } from "@/components/WaitlistForm";
 import { JournalPageMock, JOURNAL_PHASES } from "@/components/JournalBits";
 import { GuideLine } from "@/components/Guide";
 import { GUIDE } from "@/lib/guide";
@@ -50,17 +49,21 @@ export default function JournalPage() {
         {/* Intro */}
         <section className="mx-auto grid max-w-6xl items-center gap-14 px-6 pb-20 pt-32 sm:px-8 sm:pt-40 lg:grid-cols-[1.05fr_0.95fr]">
           <div>
-            <p className="type-kicker">The Sonder Journal, coming soon</p>
+            <p className="type-kicker">The Sonder Journal</p>
             <h1 className="type-h1 mt-3 text-ink">Ninety days, one page at a time.</h1>
             <p className="type-lede mt-5 max-w-xl text-slate">
               Your report shows you the pattern. The journal is where you practice the change, with
-              your guide on every page: a short lesson, one small challenge, and an evening question
-              for each of the next 90 days, written from your report and what you&rsquo;re working
-              through.
+              your guide on every page: ninety days of small practices, questions with no easy
+              answers, letters you&rsquo;ll never send, and a few surprises, written from your report
+              and what you&rsquo;re working through.
             </p>
             <GuideLine className="mt-8 max-w-xl">{GUIDE.journal}</GuideLine>
-            <div className="mt-9 max-w-lg">
-              <WaitlistForm tone="light" id="journal-top" />
+            <div className="mt-9">
+              <Link href="/assessment" className="btn btn-primary">
+                Start the climb
+                <ArrowRight size={18} aria-hidden="true" />
+              </Link>
+              <p className="mt-3 font-sign text-[0.92rem] text-slate">Your journal is written after your report.</p>
             </div>
           </div>
           <div className="lg:pl-6">
@@ -136,21 +139,17 @@ export default function JournalPage() {
           </div>
         </section>
 
-        {/* Waitlist */}
+        {/* How to get it */}
         <section className="mx-auto max-w-3xl px-6 py-24 text-center sm:px-8">
-          <h2 className="type-h1 text-ink">Be first on the trail.</h2>
+          <h2 className="type-h1 text-ink">It starts with the climb.</h2>
           <p className="type-lede mx-auto mt-4 max-w-lg text-slate">
-            We&rsquo;re finishing the first edition now. Join the list and you&rsquo;ll hear the
-            moment it&rsquo;s ready, along with the price.
+            Take the assessment, read your report, and then your guide writes your ninety days from
+            everything you shared.
           </p>
-          <div className="mx-auto mt-8 max-w-lg text-left">
-            <WaitlistForm tone="light" id="journal-bottom" />
-          </div>
-          <p className="mt-10 font-sign text-[0.98rem] text-slate">
-            Haven&rsquo;t taken the assessment yet?{" "}
-            <Link href="/assessment" className="inline-flex items-center gap-1 font-semibold text-pine underline-offset-4 hover:underline">
+          <p className="mt-8">
+            <Link href="/assessment" className="btn btn-primary">
               Start the climb
-              <ArrowRight size={16} aria-hidden="true" />
+              <ArrowRight size={18} aria-hidden="true" />
             </Link>
           </p>
         </section>

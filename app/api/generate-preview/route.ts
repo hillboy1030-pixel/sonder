@@ -63,7 +63,8 @@ export async function POST(request: NextRequest) {
     return Response.json(MOCK_PREVIEW);
   }
 
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  // Retries brief overloads and rate limits (honoring retry-after) before giving up.
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, maxRetries: 4 });
   const userContent = `${JSON.stringify({ scores, ...(context ? { context } : {}), ...(contextNeedsCare(context) ? { care: true } : {}) })}\n\nGenerate the three preview insight cards using the return_preview_insights tool.`;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
