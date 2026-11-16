@@ -29,6 +29,7 @@ import { GUIDE } from "@/lib/guide";
 import { GuideLine } from "@/components/Guide";
 import { Ember } from "@/components/Ember";
 import { JournalPageMock } from "@/components/JournalBits";
+import { TesterJournal } from "@/components/TesterJournal";
 import { KEYS, readJSON, writeJSON } from "@/lib/storage";
 import { useStored } from "@/lib/useStored";
 import { REPORT_SECTIONS, type SectionIcon } from "@/lib/reportSections";
@@ -305,6 +306,7 @@ function FullReport({ report }: { report: Report }) {
               <div className="mt-8 max-w-lg">
                 <WaitlistForm tone="dark" id="report-waitlist" />
               </div>
+              <TesterJournal report={report.sections} />
             </div>
             <div className="hidden sm:block">
               <JournalPageMock />

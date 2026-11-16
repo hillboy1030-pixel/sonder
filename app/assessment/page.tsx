@@ -101,6 +101,7 @@ export default function AssessmentPage() {
         .map((c) => ({ chapter: c.id, ...trailMarkerFor(c.id, scores) }))
         .filter((m) => m.headline);
       writeJSON(KEYS.scores, scores);
+      writeJSON(KEYS.answers, prog.answers);
       writeJSON(KEYS.context, ctx);
       writeJSON(KEYS.markers, markers);
       writeJSON(KEYS.cairn, cairnFor(scores, 4));

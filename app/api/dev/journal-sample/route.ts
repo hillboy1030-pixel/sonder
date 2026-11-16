@@ -9,7 +9,7 @@ export const maxDuration = 60;
 export async function GET(request: NextRequest) {
   if (process.env.NODE_ENV === "production") return new Response("Not found", { status: 404 });
   const part = request.nextUrl.searchParams.get("part") ?? "interior";
-  const content = await generateJournal({ scores: {}, context: null, report: [], firstName: "Jesse", words: [] });
+  const content = await generateJournal({ scores: {}, context: null, answers: null, report: [], firstName: "Jesse", words: [] });
   const t0 = Date.now();
   const interior = await renderInterior(content);
   const body = part === "cover" ? await renderCover(content, interior.pages) : interior.pdf;

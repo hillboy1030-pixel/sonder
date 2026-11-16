@@ -48,11 +48,16 @@ there's also a "Dev: fill and finish" button on the assessment page.
 
 ## The 90-day journal (in progress)
 
-- `lib/prompts.ts`: Ember's instructions for the journal (`JOURNAL_LETTERS_PROMPT`, `JOURNAL_PHASE_PROMPT`)
-- `lib/server/journal/generate.ts`: writes the journal in four parallel AI calls (letters + three 30-day phases), validated and retried
-- `lib/server/journal/pdf.tsx`: print-ready PDFs for Lulu: 224-page 6x9 black-and-white interior (with 0.125 in bleed, mirrored margins, embedded fonts from `assets/fonts`) and a full-colour wraparound cover
+The full design lives in the Sonder project as `journal/journal-blueprint.md`.
+
+- `lib/journal/plan.ts`: the shape of each person's ninety days (twelve kinds of day: practice, question, mirror, dream, four honest days, letter, wild card, strength, savor, best possible self, retake, rest), personalized by their profile; also picks the ten retake statements
+- `lib/prompts.ts`: Ember's journal instructions (`JOURNAL_LETTERS_PROMPT`, `JOURNAL_PHASE_PROMPT`), including the gentler book for anyone who may be going through something heavy
+- `lib/server/journal/generate.ts`: Ember writes it in four parallel calls (letters + three 30-day stretches), checked against the plan and retried
+- `lib/server/journal/pdf.tsx`: print-ready PDFs for Lulu: 236-page 6x9 black-and-white interior (bleed, mirrored margins, embedded fonts from `assets/fonts`, a layout per kind of day, wild cards on black, upside-down notes) and a full-colour wraparound cover
 - `lib/server/lulu.ts`: Lulu Print API client (cover size, cost, print job). Not wired in yet. Needs `LULU_CLIENT_KEY`, `LULU_CLIENT_SECRET`, `LULU_ENV`
+- Testers can build the real journal from their own climb: a "Build my journal" box appears at the bottom of the report in tester mode (`/api/journal/preview`, about $1–2 of AI per book)
 - In development, `/api/dev/journal-sample?part=interior` (or `part=cover`) renders the sample journal
+- The sources page at the back of the book (`SOURCES` in `pdf.tsx`) must be re-checked before launch
 
 ## Protection against runaway costs
 
