@@ -65,7 +65,7 @@ export default function AssessmentPage() {
   const router = useRouter();
   const [p, setP] = useState<Progress>(START);
   const stored = useStored<Progress>(KEYS.progress);
-  const isTesterBrowser = !!useStored<string>(KEYS.tester);
+  const devtools = !!useStored<boolean>(KEYS.devtools);
   const [dismissed, setDismissed] = useState(false);
   const loaded = stored !== undefined;
   const saved = !dismissed && stored && stored.phase !== "welcome" ? stored : null;
@@ -316,7 +316,7 @@ export default function AssessmentPage() {
         </div>
       </main>
 
-      {(process.env.NODE_ENV === "development" || isTesterBrowser) && <DevFill onFill={finish} />}
+      {(process.env.NODE_ENV === "development" || devtools) && <DevFill onFill={finish} />}
     </div>
   );
 }

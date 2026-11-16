@@ -22,14 +22,13 @@ import {
 import { Logo } from "@/components/Logo";
 import { SiteFooter } from "@/components/SiteFooter";
 import { WritingState, ProblemState } from "@/components/WritingState";
-import { WaitlistForm } from "@/components/WaitlistForm";
 import { SupportNote } from "@/components/SupportNote";
 import { contextNeedsCare } from "@/lib/safety";
 import { GUIDE } from "@/lib/guide";
 import { GuideLine } from "@/components/Guide";
 import { Ember } from "@/components/Ember";
 import { JournalPageMock } from "@/components/JournalBits";
-import { TesterJournal } from "@/components/TesterJournal";
+import { JournalBuilder } from "@/components/JournalBuilder";
 import { KEYS, readJSON, writeJSON } from "@/lib/storage";
 import { useStored } from "@/lib/useStored";
 import { REPORT_SECTIONS, type SectionIcon } from "@/lib/reportSections";
@@ -162,6 +161,7 @@ function ReportLoader() {
 function FullReport({ report }: { report: Report }) {
   const insights = useStored<{ previewInsights: Insight[] }>(KEYS.preview)?.previewInsights ?? [];
   const needsCare = contextNeedsCare(useStored<Record<string, string>>(KEYS.context));
+  const earlyAccess = !!useStored<string>(KEYS.tester);
   const [downloading, setDownloading] = useState(false);
   const [active, setActive] = useState(0);
   const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
@@ -204,9 +204,22 @@ function FullReport({ report }: { report: Report }) {
               <Printer size={17} aria-hidden="true" />
               Print
             </button>
+            {earlyAccess && (
+              <a href="#journal" className="btn btn-quiet btn-sm">
+                <BookOpen size={17} aria-hidden="true" />
+                Journal
+              </a>
+            )}
             <button onClick={download} disabled={downloading} className="btn btn-dark btn-sm">
               {downloading ? <LoaderCircle size={17} className="animate-spin" aria-hidden="true" /> : <Download size={17} aria-hidden="true" />}
-              {downloading ? "Preparing PDF" : "Download PDF"}
+              {downloading ? (
+                "Preparing"
+              ) : (
+                <>
+                  <span className="sm:hidden">PDF</span>
+                  <span className="hidden sm:inline">Download PDF</span>
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -294,19 +307,16 @@ function FullReport({ report }: { report: Report }) {
         </div>
 
         {/* Journal */}
-        <section className="no-print relative isolate overflow-hidden bg-pine text-snow">
+        <section id="journal" className="no-print relative isolate scroll-mt-24 overflow-hidden bg-pine text-snow">
           <div className="mx-auto grid max-w-6xl items-center gap-14 px-6 py-20 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:py-24">
             <div>
               <p className="type-kicker text-gold-hi">What comes next</p>
               <h2 className="type-h1 mt-2">Turn this report into 90 days.</h2>
               <p className="type-lede mt-4 max-w-lg text-snow/80">
                 The Sonder Journal turns what you just read into ninety days of practice, questions, letters,
-                and a few surprises, written for you and printed. It&rsquo;s nearly ready.
+                and a few surprises, written just for you.
               </p>
-              <div className="mt-8 max-w-lg">
-                <WaitlistForm tone="dark" id="report-waitlist" />
-              </div>
-              <TesterJournal report={report.sections} />
+              <JournalBuilder report={report.sections} />
             </div>
             <div className="hidden sm:block">
               <JournalPageMock />

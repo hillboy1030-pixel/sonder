@@ -17,7 +17,6 @@ import {
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { MountainScene } from "@/components/MountainScene";
-import { WaitlistForm } from "@/components/WaitlistForm";
 import { ChapterIcon } from "@/components/ChapterIcon";
 import { JournalPageMock, JOURNAL_PHASES } from "@/components/JournalBits";
 import { REPORT_PRICE_LABEL } from "@/lib/pricing";
@@ -295,8 +294,11 @@ function Journal() {
               </li>
             ))}
           </ol>
-          <div className="mt-10 max-w-lg">
-            <WaitlistForm tone="dark" id="home-waitlist" />
+          <div className="mt-10">
+            <Link href="/journal" className="btn btn-secondary btn-sm">
+              See what&rsquo;s inside
+              <ArrowRight size={17} aria-hidden="true" />
+            </Link>
           </div>
         </div>
         <JournalPageMock />

@@ -88,11 +88,25 @@ const LETTERS_TOOL: Anthropic.Tool = {
 
 const clean = (s: unknown) => (typeof s === "string" ? s.replace(/[ \t]+/g, " ").trim() : "");
 
-async function ask<T>(client: Anthropic, system: string, tool: Anthropic.Tool, payload: object, valid: (d: T | null) => d is T): Promise<T> {
+async function ask<T>(
+  client: Anthropic,
+  system: string,
+  tool: Anthropic.Tool,
+  payload: object,
+  valid: (d: T | null) => d is T,
+  deadline: number,
+  /** Turns a nearly complete answer into a usable one, used only if no attempt is fully valid. */
+  repair: (d: T | null) => T | null = () => null
+): Promise<T> {
   let lastProblem = "no response";
+  let fallback: T | null = null;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const left = deadline - Date.now();
+    // A stretch takes a minute or two to write; don't start one that can't finish.
+    if (attempt > 1 && left < 90_000) break;
     try {
-      const stream = client.messages.stream({
+      const stream = client.messages.stream(
+        {
         model: AI_MODEL,
         max_tokens: 24000,
         system,
@@ -100,13 +114,16 @@ async function ask<T>(client: Anthropic, system: string, tool: Anthropic.Tool, p
         tool_choice: { type: "auto" },
         thinking: { type: "between_tools" },
         messages: [{ role: "user", content: `${JSON.stringify(payload)}\n\nWrite it now using the ${tool.name} tool.` }],
-      });
+        },
+        { timeout: Math.max(30_000, left) }
+      );
       const message = await stream.finalMessage();
       if (message.stop_reason === "max_tokens") {
         lastProblem = "cut short";
       } else {
         const data = extractStructured<T>(message, tool.name);
         if (valid(data)) return data;
+        fallback = fallback ?? repair(data);
         lastProblem = "incomplete or off-plan";
       }
     } catch (error) {
@@ -115,6 +132,10 @@ async function ask<T>(client: Anthropic, system: string, tool: Anthropic.Tool, p
       if (error instanceof Anthropic.APIError && [400, 401, 403].includes(error.status ?? 0)) break;
     }
     console.warn(`[journal] ${tool.name} attempt ${attempt}: ${lastProblem}`);
+  }
+  if (fallback) {
+    console.warn(`[journal] ${tool.name}: using a repaired answer`);
+    return fallback;
   }
   throw new Error(`Journal ${tool.name} failed: ${lastProblem}`);
 }
@@ -190,7 +211,9 @@ export async function generateJournal(inputs: JournalInputs): Promise<JournalCon
 
   if (MOCK_MODE) return mockJournal(kinds, shared);
 
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, maxRetries: 3 });
+  // The whole journal must finish inside the server's five-minute limit.
+  const deadline = Date.now() + 265_000;
   const base = {
     scores: inputs.scores,
     ...(inputs.context ? { context: inputs.context } : {}),
@@ -222,6 +245,32 @@ export async function generateJournal(inputs: JournalInputs): Promise<JournalCon
     return d.days.every((day, k) => dayFits(day, kinds[first + k - 1]));
   };
 
+  // A stretch with a few malformed days still makes a good book: those days become rest days.
+  const stretchRepair = (i: number) => (d: RawStretch | null): RawStretch | null => {
+    if (!d || clean(d.letter).length < 40 || !Array.isArray(d.days) || d.days.length !== 30) return null;
+    const first = PHASES[i].first;
+    const misfits = d.days.filter((day, k) => !dayFits(day, kinds[first + k - 1])).length;
+    if (misfits > 4) return null;
+    const days = d.days.map((day, k) => {
+      if (dayFits(day, kinds[first + k - 1])) return day;
+      kinds[first + k - 1] = "rest";
+      return { ...day, lesson: "Rest is part of the climb. Nothing to do today.", steps: [] };
+    });
+    const checkins = WEEKS.slice(i * 4, i * 4 + 4).map((w, k) => clean(d.checkins?.[k]) || `Looking back on ${w.theme.toLowerCase()}: ${w.question}`);
+    return { letter: d.letter, days, checkins };
+  };
+
+  const lettersRepair = (d: RawLetters | null): RawLetters | null =>
+    d && clean(d.opening).length > 300 && clean(d.closing).length > 200
+      ? {
+          ...d,
+          dedication: clean(d.dedication) || `For ${inputs.firstName}, one page at a time.`,
+          pattern: clean(d.pattern),
+          notes: Array.isArray(d.notes) ? d.notes : [],
+          openWhen: Array.isArray(d.openWhen) ? d.openWhen : [],
+        }
+      : null;
+
   const lettersValid = (d: RawLetters | null): d is RawLetters =>
     !!d &&
     clean(d.opening).length > 300 &&
@@ -234,8 +283,8 @@ export async function generateJournal(inputs: JournalInputs): Promise<JournalCon
     d.openWhen.filter((n) => clean(n)).length >= 6;
 
   const [letters, ...stretches] = await Promise.all([
-    ask<RawLetters>(client, JOURNAL_LETTERS_PROMPT, LETTERS_TOOL, base, lettersValid),
-    ...PHASES.map((_, i) => ask<RawStretch>(client, JOURNAL_PHASE_PROMPT, STRETCH_TOOL, stretchPayload(i), stretchValid(i))),
+    ask<RawLetters>(client, JOURNAL_LETTERS_PROMPT, LETTERS_TOOL, base, lettersValid, deadline, lettersRepair),
+    ...PHASES.map((_, i) => ask<RawStretch>(client, JOURNAL_PHASE_PROMPT, STRETCH_TOOL, stretchPayload(i), stretchValid(i), deadline, stretchRepair(i))),
   ]);
 
   return {
@@ -247,8 +296,8 @@ export async function generateJournal(inputs: JournalInputs): Promise<JournalCon
     phases: stretches.map((s, i) => ({ name: PHASES[i].name, letter: clean(s.letter) })),
     days: stretches.flatMap((s, i) => s.days.map((d, k) => tidyDay(d, PHASES[i].first + k, kinds[PHASES[i].first + k - 1]))),
     weeks: WEEKS.map((w, k) => ({ n: w.n, theme: w.theme, checkin: clean(stretches[Math.floor(k / 4)].checkins[k % 4]) })),
-    notes: NOTE_SLOTS.map((slot, k) => ({ ...slot, text: clean(letters.notes[k]) })),
-    openWhen: OPEN_WHEN.map((when, k) => ({ when, letter: clean(letters.openWhen[k]) })),
+    notes: NOTE_SLOTS.map((slot, k) => ({ ...slot, text: clean(letters.notes?.[k]) })),
+    openWhen: OPEN_WHEN.map((when, k) => ({ when, letter: clean(letters.openWhen?.[k]) })),
   };
 }
 

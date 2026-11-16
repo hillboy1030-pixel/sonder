@@ -8,14 +8,14 @@ import type { NextRequest } from "next/server";
 type Rule = { limit: number; windowMs: number };
 
 export const LIMITS = {
+  // Generous enough for a family sharing one wifi connection.
   preview: [
-    { limit: 6, windowMs: 60 * 60 * 1000 },
-    { limit: 15, windowMs: 24 * 60 * 60 * 1000 },
+    { limit: 20, windowMs: 60 * 60 * 1000 },
+    { limit: 40, windowMs: 24 * 60 * 60 * 1000 },
   ],
-  report: [{ limit: 6, windowMs: 60 * 60 * 1000 }],
-  checkout: [{ limit: 20, windowMs: 60 * 60 * 1000 }],
-  waitlist: [{ limit: 8, windowMs: 60 * 60 * 1000 }],
-  journal: [{ limit: 10, windowMs: 60 * 60 * 1000 }],
+  report: [{ limit: 20, windowMs: 60 * 60 * 1000 }],
+  checkout: [{ limit: 30, windowMs: 60 * 60 * 1000 }],
+  journal: [{ limit: 12, windowMs: 60 * 60 * 1000 }],
 } satisfies Record<string, Rule[]>;
 
 const hits = new Map<string, number[]>();

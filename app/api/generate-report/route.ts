@@ -77,7 +77,8 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "We couldn't confirm your purchase just now. Please try again." }, { status: 503 });
   }
 
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  // Retries brief overloads and rate limits (honoring retry-after) before giving up.
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, maxRetries: 4 });
   const userContent = `${JSON.stringify({ scores, ...(context ? { context } : {}), ...(contextNeedsCare(context) ? { care: true } : {}) })}\n\nGenerate the complete Sonder report using the return_report tool.`;
 
   let lastError = "Your report didn't come through. Please try again.";

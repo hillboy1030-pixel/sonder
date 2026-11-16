@@ -18,7 +18,6 @@ import {
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { WritingState, ProblemState } from "@/components/WritingState";
-import { WaitlistForm } from "@/components/WaitlistForm";
 import { SupportNote } from "@/components/SupportNote";
 import { contextNeedsCare } from "@/lib/safety";
 import { GUIDE } from "@/lib/guide";
@@ -150,7 +149,7 @@ function Preview({ insights }: { insights: Insight[] }) {
               <BookOpen size={24} aria-hidden="true" />
             </span>
             <div>
-              <p className="type-kicker">Coming soon</p>
+              <p className="type-kicker">After your report</p>
               <h2 className="type-h2 mt-1 text-ink">The 90-day Sonder Journal</h2>
               <p className="mt-3 text-slate">
                 Your report, turned into ninety days in a printed journal written just for you.{" "}
@@ -158,9 +157,6 @@ function Preview({ insights }: { insights: Insight[] }) {
                   See what&rsquo;s inside
                 </Link>
               </p>
-              <div className="mt-6 max-w-lg">
-                <WaitlistForm tone="light" id="preview-waitlist" />
-              </div>
             </div>
           </div>
         </section>
@@ -217,6 +213,8 @@ function InsightCard({ insight, index }: { insight: Insight; index: number }) {
 // ─── Unlock ───────────────────────────────────────────────────────────────────
 
 function Unlock() {
+  // Early access (a tester link): everything is free, so don't show a price.
+  const early = !!useStored<string>(KEYS.tester);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -252,14 +250,15 @@ function Unlock() {
             <p className="mt-4 text-snow/80">
               Nine sections that go far deeper than these three insights, including what you&rsquo;re
               carrying right now, and ending with where to begin.
+              {early && " Then your guide writes your 90-day journal."}
             </p>
             <p className="mt-7 flex items-baseline gap-2">
-              <span className="font-sign text-6xl font-bold leading-none">{REPORT_PRICE_LABEL}</span>
-              <span className="font-sign text-snow/70">one time</span>
+              <span className="font-sign text-6xl font-bold leading-none">{early ? "Free" : REPORT_PRICE_LABEL}</span>
+              <span className="font-sign text-snow/70">{early ? "early access" : "one time"}</span>
             </p>
             <button onClick={checkout} disabled={loading} className="btn btn-primary mt-6 w-full sm:w-auto">
               {loading ? <LoaderCircle size={18} className="animate-spin" aria-hidden="true" /> : <Lock size={17} aria-hidden="true" />}
-              {loading ? "Opening secure checkout" : `Unlock my report for ${REPORT_PRICE_LABEL}`}
+              {loading ? (early ? "Opening your report" : "Opening secure checkout") : early ? "Unlock my report" : `Unlock my report for ${REPORT_PRICE_LABEL}`}
             </button>
             {error && (
               <p role="alert" className="mt-3 font-sign text-sm text-gold-hi">
@@ -267,9 +266,11 @@ function Unlock() {
               </p>
             )}
             <ul className="mt-6 space-y-2 font-sign text-[0.92rem] text-snow/70">
-              <li className="flex items-center gap-2">
-                <ShieldCheck size={15} aria-hidden="true" /> Secure checkout by Stripe
-              </li>
+              {!early && (
+                <li className="flex items-center gap-2">
+                  <ShieldCheck size={15} aria-hidden="true" /> Secure checkout by Stripe
+                </li>
+              )}
               <li className="flex items-center gap-2">
                 <Clock size={15} aria-hidden="true" /> Written in 2 to 3 minutes, just for you
               </li>

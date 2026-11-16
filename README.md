@@ -61,5 +61,5 @@ The full design lives in the Sonder project as `journal/journal-blueprint.md`.
 
 ## Protection against runaway costs
 
-- `lib/server/rateLimit.ts` limits each visitor on the routes that cost money (preview: 6/hour and 15/day) and refuses calls from other websites
+- `lib/server/rateLimit.ts` limits each visitor on the routes that cost money (preview: 20/hour and 40/day per connection, so a family on one wifi is fine) and refuses calls from other websites
 - Set a monthly spend limit in the Anthropic console as the hard ceiling
