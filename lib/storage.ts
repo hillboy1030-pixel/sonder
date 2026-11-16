@@ -2,6 +2,8 @@
 
 export const KEYS = {
   progress: "sonder_progress_v2",
+  /** Individual answers (question id → 1–5), kept for the journal's retakes. */
+  answers: "sonder_answers",
   scores: "sonder_scores",
   context: "sonder_context",
   markers: "sonder_markers",
