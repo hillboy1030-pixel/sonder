@@ -10,7 +10,7 @@ export const REPORT_SECTIONS = [
   { title: "Where you get stuck", icon: "route" },
   { title: "Other people's trails", icon: "users" },
   { title: "The paradox you carry", icon: "mountain" },
-  { title: "Your first 90 days", icon: "sunrise" },
+  { title: "Where to begin", icon: "sunrise" },
 ] as const;
 
 export type SectionIcon = (typeof REPORT_SECTIONS)[number]["icon"];

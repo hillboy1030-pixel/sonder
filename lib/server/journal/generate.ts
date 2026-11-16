@@ -151,7 +151,8 @@ const tidyDay = (d: RawDay, day: number, kind: DayKind): JournalDay => ({
   day,
   kind,
   lesson: clean(d.lesson),
-  when: clean(d.when),
+  // "When …," always leads into "I will …".
+  when: clean(d.when).replace(/[.;:!]+$/, "").replace(/([^,])$/, "$1,"),
   then: clean(d.then),
   prompt: clean(d.prompt),
   title: clean(d.title),
@@ -170,7 +171,7 @@ export function linesWorthCarrying(report: { title: string; content: string }[])
 /** "**Title** — Author. Why…" lines under the Books heading of report part 9. */
 export function booksFrom(report: { title: string; content: string }[]) {
   const plan = report[8]?.content ?? "";
-  const after = plan.split(/\*\*Books\*\*/)[1]?.split(/\*\*Journal Prompts\*\*|\*\*Daily Practices\*\*/)[0] ?? "";
+  const after = plan.split(/\*\*Books\*\*/)[1]?.split(/\*\*(?:Journal Prompts|Daily Practices|Start tomorrow|A question for this week)\*\*/)[0] ?? "";
   return [...after.matchAll(/\*\*([^*]+)\*\*\s*[—–-]\s*([^.\n]+)/g)].slice(0, 3).map((m) => ({ title: m[1].trim(), author: m[2].trim() }));
 }
 
