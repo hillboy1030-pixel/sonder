@@ -161,7 +161,7 @@ const STAGES = [
     icon: Flag,
     name: "The summit",
     title: "Your full Sonder Report",
-    body: "A nine-part letter from your guide: what they see in you, what you're carrying, how you work and love, where you get stuck, and your first 90 days. Yours to keep as a PDF.",
+    body: "A nine-part letter from your guide: what they see in you, what you're carrying, how you work and love, where you get stuck, and where to begin. Yours to keep as a PDF.",
     meta: REPORT_PRICE_LABEL,
   },
   {
@@ -326,7 +326,7 @@ const FAQS = [
   },
   {
     q: "What's in the full report?",
-    a: `A letter from your guide in nine parts: ${REPORT_SECTIONS.map((s) => s.title.toLowerCase()).join(", ")}. The last part includes books, journal prompts, and daily practices.`,
+    a: `A letter from your guide in nine parts: ${REPORT_SECTIONS.map((s) => s.title.toLowerCase()).join(", ")}. The last part tells you where to begin: three books, one thing to start tomorrow, and a question for the week.`,
   },
   {
     q: "Can I take it again later?",

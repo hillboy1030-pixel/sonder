@@ -151,7 +151,7 @@ export async function generatePDF(report: Report, insights: PreviewInsight[]): P
 
     for (const line of content.split(/\n/).map((l) => l.trim()).filter(Boolean)) {
 
-      // Part header: **Books** / **Journal Prompts** / **Daily Practices**
+      // Part header: **Books** / **Start tomorrow** / **A question for this week** (older reports: prompts, practices)
       if (/^\*\*[^*]+\*\*$/.test(line)) {
         const extra = firstHeader ? 0 : 12;
         y = guard(y, 36 + extra);

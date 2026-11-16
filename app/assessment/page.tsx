@@ -589,7 +589,7 @@ function ChapterIntro({ chapterIndex, onStart, onBack }: { chapterIndex: number;
           <ChapterIcon id={c.id} size={26} strokeWidth={1.9} />
         </span>
         <p className="type-kicker">
-          Chapter {chapterIndex} of {CHAPTERS.length - 1}
+          Stage {chapterIndex} of {CHAPTERS.length - 1}
         </p>
       </div>
       <h1 className="type-h1 mt-6 text-ink">{c.name}</h1>
@@ -614,7 +614,7 @@ function ChapterIntro({ chapterIndex, onStart, onBack }: { chapterIndex: number;
 
       <CardFooter onBack={onBack} note={FRAMEWORK[c.id]}>
         <button onClick={onStart} className="btn btn-primary" autoFocus>
-          {chapterIndex === 1 ? "Begin the climb" : "Start this chapter"}
+          {chapterIndex === 1 ? "Begin the climb" : "Start this stage"}
           <ArrowRight size={18} strokeWidth={2.25} aria-hidden="true" />
         </button>
       </CardFooter>

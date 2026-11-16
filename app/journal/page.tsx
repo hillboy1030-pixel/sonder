@@ -22,7 +22,7 @@ import { GUIDE } from "@/lib/guide";
 export const metadata: Metadata = {
   title: "The Sonder Journal — 90 days, one page at a time",
   description:
-    "A printed 90-day journal written from your Sonder Report and what you're working through: one small challenge a day.",
+    "A printed 90-day journal written from your Sonder Report and what you're working through, with your guide on every page.",
 };
 
 const INSIDE = [

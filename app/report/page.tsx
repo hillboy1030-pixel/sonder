@@ -300,8 +300,8 @@ function FullReport({ report }: { report: Report }) {
               <p className="type-kicker text-gold-hi">What comes next</p>
               <h2 className="type-h1 mt-2">Turn this report into 90 days.</h2>
               <p className="type-lede mt-4 max-w-lg text-snow/80">
-                The Sonder Journal takes what you just read and gives you one small challenge a day to
-                practice it, printed and shipped to you. It&rsquo;s nearly ready.
+                The Sonder Journal turns what you just read into ninety days of practice, questions, letters,
+                and a few surprises, written for you and printed. It&rsquo;s nearly ready.
               </p>
               <div className="mt-8 max-w-lg">
                 <WaitlistForm tone="dark" id="report-waitlist" />
@@ -363,7 +363,7 @@ function Paragraphs({ content }: { content: string }) {
   );
 }
 
-/** Section 9: books, journal prompts, and daily practices. */
+/** Section 9: where to begin (books, one practice, one question). Older reports have prompts and practices. */
 function PlanContent({ content }: { content: string }) {
   const lines = content.split(/\n/).map((l) => l.trim()).filter(Boolean);
   const groups: { heading: string; items: string[] }[] = [];
@@ -373,7 +373,7 @@ function PlanContent({ content }: { content: string }) {
     // The closing line is shown once at the end of the report.
     if (/you are sondering/i.test(line)) continue;
     const heading = line.match(/^\*\*([^*]+)\*\*$/);
-    if (heading && /books|prompts|practices/i.test(heading[1])) {
+    if (heading && /books|prompts|practices|tomorrow|question/i.test(heading[1])) {
       groups.push({ heading: heading[1], items: [] });
     } else if (groups.length) {
       groups[groups.length - 1].items.push(line);
@@ -384,7 +384,7 @@ function PlanContent({ content }: { content: string }) {
 
   if (!groups.length) return <Paragraphs content={content} />;
 
-  const groupIcon = (h: string) => (/book/i.test(h) ? BookOpen : /prompt/i.test(h) ? PenLine : Sunrise);
+  const groupIcon = (h: string) => (/book/i.test(h) ? BookOpen : /prompt|question/i.test(h) ? PenLine : Sunrise);
 
   return (
     <>

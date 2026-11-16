@@ -153,7 +153,7 @@ function Preview({ insights }: { insights: Insight[] }) {
               <p className="type-kicker">Coming soon</p>
               <h2 className="type-h2 mt-1 text-ink">The 90-day Sonder Journal</h2>
               <p className="mt-3 text-slate">
-                Your report, turned into a printed journal with one small challenge a day.{" "}
+                Your report, turned into ninety days in a printed journal written just for you.{" "}
                 <Link href="/journal" className="font-sign font-semibold text-pine underline-offset-4 hover:underline">
                   See what&rsquo;s inside
                 </Link>
@@ -251,7 +251,7 @@ function Unlock() {
             </GuideLine>
             <p className="mt-4 text-snow/80">
               Nine sections that go far deeper than these three insights, including what you&rsquo;re
-              carrying right now, and ending with your first 90 days.
+              carrying right now, and ending with where to begin.
             </p>
             <p className="mt-7 flex items-baseline gap-2">
               <span className="font-sign text-6xl font-bold leading-none">{REPORT_PRICE_LABEL}</span>
